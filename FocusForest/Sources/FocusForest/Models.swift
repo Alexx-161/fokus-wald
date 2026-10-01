@@ -19,6 +19,12 @@ final class Preferences: ObservableObject {
             Self.apply(AppTheme.find(themeID))
         }
     }
+    /// ⌃⌥F starts, pauses and resumes the timer from any app.
+    @Published var hotkeyEnabled: Bool { didSet { defaults.set(hotkeyEnabled, forKey: "mac.hotkey") } }
+    /// Runs the two shortcuts below when a session starts and ends, e.g. to switch a Focus mode on and off.
+    @Published var focusShortcuts: Bool { didSet { defaults.set(focusShortcuts, forKey: "mac.focusShortcuts") } }
+    @Published var focusOnShortcut: String { didSet { defaults.set(focusOnShortcut, forKey: "mac.focusOn") } }
+    @Published var focusOffShortcut: String { didSet { defaults.set(focusOffShortcut, forKey: "mac.focusOff") } }
     // Shows the notch widget while the settings panel is open so placement can be tuned live.
     @Published var previewing = false
 
@@ -29,12 +35,20 @@ final class Preferences: ObservableObject {
             "notch.gap": 56.0,
             "notch.onlyWhileActive": true,
             "window.pinned": false,
+            "mac.hotkey": true,
+            "mac.focusShortcuts": false,
+            "mac.focusOn": "Fokus an",
+            "mac.focusOff": "Fokus aus",
         ])
         notchEnabled = defaults.bool(forKey: "notch.enabled")
         side = Side(rawValue: defaults.string(forKey: "notch.side") ?? "") ?? .right
         gap = defaults.double(forKey: "notch.gap")
         onlyWhileActive = defaults.bool(forKey: "notch.onlyWhileActive")
         pinned = defaults.bool(forKey: "window.pinned")
+        hotkeyEnabled = defaults.bool(forKey: "mac.hotkey")
+        focusShortcuts = defaults.bool(forKey: "mac.focusShortcuts")
+        focusOnShortcut = defaults.string(forKey: "mac.focusOn") ?? ""
+        focusOffShortcut = defaults.string(forKey: "mac.focusOff") ?? ""
         themeID = defaults.string(forKey: "theme") ?? AppTheme.all[0].id
         Self.apply(AppTheme.find(themeID))
     }
@@ -99,19 +113,10 @@ final class AppState {
         // "onboarding.forceShow" is only ever passed as a launch argument (-onboarding.forceShow YES) for previews.
         ui.showOnboarding = !defaults.bool(forKey: "onboarding.done") || defaults.bool(forKey: "onboarding.forceShow")
 
-        timer.pickSpecies = { [garden] seed in garden.pickSpecies(seed: seed) }
-        timer.refreshSpecies()
-        timer.onComplete = { [garden] minutes, seed, speciesID, date in
-            garden.add(minutes: minutes, seed: seed, speciesID: speciesID, date: date)
-            NSSound(named: "Glass")?.play()
-        }
+        cancellables = SessionLink.connect(timer: timer, garden: garden) { _ in NSSound(named: "Glass")?.play() }
+        timer.onBreakEnd = { NSSound(named: "Glass")?.play() }
         // A session restored from the last run may already be over.
         timer.tick()
-        garden.$selection
-            .dropFirst()
-            .receive(on: DispatchQueue.main)
-            .sink { [timer] _ in timer.refreshSpecies() }
-            .store(in: &cancellables)
     }
 
     func finishOnboarding() {

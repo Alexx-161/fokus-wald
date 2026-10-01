@@ -28,27 +28,37 @@ struct TimerScreen: View {
             }
 
             VStack(spacing: 5) {
-                Text(statusText)
+                Text(SessionText.status(timer: timer, garden: garden))
                     .font(.system(size: 15, design: .rounded))
                     .foregroundStyle(Theme.muted)
                     .multilineTextAlignment(.center)
-                if let unlocked = newlyUnlocked {
-                    Label("Neu freigeschaltet: \(unlocked.name)", systemImage: "lock.open.fill")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(unlocked.deep)
-                }
+                    .fixedSize(horizontal: false, vertical: true)
+                SessionHighlights(timer: timer, garden: garden)
             }
 
             if timer.phase == .idle {
-                speciesChip
+                SaplingSwitch(garden: garden)
+                if timer.pending == nil { speciesChip }
                 HStack(spacing: 7) {
                     ForEach([15, 25, 45, 60], id: \.self) { m in
                         Button("\(m) min") { timer.minutes = m }
                             .buttonStyle(ChipButtonStyle(selected: timer.minutes == m, color: species.deep))
                     }
                 }
+                TagChips(garden: garden)
+                GoldenHint(timer: timer)
+            }
+            if timer.phase == .finished && !timer.isOnBreak {
+                SessionNoteField(garden: garden)
             }
             controls
+            if confirmGiveUp {
+                Text("Keine Sorge: Sie bleibt als Setzling auf deiner Insel und wächst beim nächsten Mal weiter.")
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundStyle(Theme.muted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(.horizontal, 22)
         .padding(.vertical, 16)
@@ -67,12 +77,17 @@ struct TimerScreen: View {
                 .stroke(species.deep, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Canvas { ctx, size in
-                PlantPainter.draw(ctx, species: species, base: CGPoint(x: size.width / 2, y: size.height * 0.84),
-                                  unit: size.width, progress: p, seed: timer.seed,
-                                  time: date.timeIntervalSinceReferenceDate)
+                let base = CGPoint(x: size.width / 2, y: size.height * 0.84)
+                let t = date.timeIntervalSinceReferenceDate
+                PlantPainter.draw(ctx, species: species, base: base, unit: size.width, progress: p, seed: timer.seed,
+                                  time: t, golden: timer.growsGolden)
+                if timer.isOnBreak {
+                    LivingPainter.drawWateringCan(ctx, at: CGPoint(x: base.x + size.width * 0.26, y: base.y - size.width * 0.66),
+                                                  unit: size.width, time: t)
+                }
             }
             .padding(38)
-            if timer.phase == .finished {
+            if timer.phase == .finished && !timer.isOnBreak {
                 Image(systemName: "sparkles")
                     .font(.system(size: 26))
                     .foregroundStyle(Palette.star)
@@ -90,7 +105,7 @@ struct TimerScreen: View {
                     .buttonStyle(RoundIconButtonStyle(size: 38))
                     .accessibilityLabel("Kürzer")
             }
-            Text(TimeFormat.clock(timer.remaining(at: date)))
+            Text(TimeFormat.clock(timer.isOnBreak ? timer.breakRemaining(at: date) : timer.remaining(at: date)))
                 .font(.system(size: 52, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .opacity(timer.phase == .paused ? 0.5 : 1)
@@ -100,28 +115,6 @@ struct TimerScreen: View {
                     .accessibilityLabel("Länger")
             }
         }
-    }
-
-    private var statusText: String {
-        switch timer.phase {
-        case .idle:
-            return "Als Nächstes wächst: \(species.name)"
-        case .running:
-            return "\(species.name) wächst …"
-        case .paused:
-            return "Pausiert – deine Pflanze wartet auf dich"
-        case .finished:
-            if let last = garden.plants.last, garden.plants(on: last.island).count == Garden.islandCapacity {
-                return "\(Garden.islandName(last.island)) ist vollendet! Eine neue Insel taucht auf."
-            }
-            return "\(species.name) steht jetzt auf deiner Insel!"
-        }
-    }
-
-    /// A species whose unlock threshold was reached by the session that just finished.
-    private var newlyUnlocked: PlantSpecies? {
-        guard timer.phase == .finished else { return nil }
-        return PlantSpecies.all.first { $0.unlockAt > 0 && $0.unlockAt == garden.plants.count }
     }
 
     private var speciesChip: some View {
@@ -143,8 +136,10 @@ struct TimerScreen: View {
     private var controls: some View {
         switch timer.phase {
         case .idle:
-            Button { model.start() } label: { Label("Pflanzen", systemImage: "leaf.fill") }
-                .buttonStyle(PrimaryButtonStyle(color: species.deep))
+            Button { model.start() } label: {
+                Label(timer.pending == nil ? "Pflanzen" : "Weiterwachsen lassen", systemImage: "leaf.fill")
+            }
+            .buttonStyle(PrimaryButtonStyle(color: species.deep))
         case .running, .paused:
             HStack(spacing: 10) {
                 if timer.phase == .running {
@@ -154,10 +149,10 @@ struct TimerScreen: View {
                     Button { timer.resume() } label: { Label("Weiter", systemImage: "play.fill") }
                         .buttonStyle(PrimaryButtonStyle(color: species.deep))
                 }
-                Button(confirmGiveUp ? "Wirklich?" : "Aufgeben") {
+                Button(confirmGiveUp ? "Wirklich?" : "Aufhören") {
                     if confirmGiveUp {
                         confirmGiveUp = false
-                        timer.reset()
+                        timer.giveUp()
                     } else {
                         confirmGiveUp = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { confirmGiveUp = false }
@@ -166,14 +161,28 @@ struct TimerScreen: View {
                 .buttonStyle(SoftButtonStyle(tint: confirmGiveUp ? Color(hex: 0xE07A7A) : nil))
             }
         case .finished:
-            Button { timer.reset() } label: { Label("Neue Pflanze", systemImage: "plus") }
-                .buttonStyle(PrimaryButtonStyle(color: species.deep))
+            HStack(spacing: 10) {
+                if timer.isOnBreak {
+                    Button { model.tab = .island } label: { Label("Insel", systemImage: "paintbrush.fill") }
+                        .buttonStyle(SoftButtonStyle())
+                    Button { timer.reset() } label: { Label("Pause beenden", systemImage: "checkmark") }
+                        .buttonStyle(PrimaryButtonStyle(color: species.deep))
+                } else {
+                    Button { timer.startBreak(minutes: garden.breakMinutes) } label: {
+                        Label("Gießzeit · \(garden.breakMinutes) min", systemImage: "drop.fill")
+                    }
+                    .buttonStyle(SoftButtonStyle())
+                    Button { timer.reset() } label: { Label("Weiter", systemImage: "plus") }
+                        .buttonStyle(PrimaryButtonStyle(color: species.deep))
+                }
+            }
         }
     }
 }
 
 struct SettingsSheet: View {
     @ObservedObject private var prefs = AppModel.shared.prefs
+    @ObservedObject private var garden = AppModel.shared.garden
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -206,6 +215,13 @@ struct SettingsSheet: View {
                     Toggle("Bildschirm anlassen", isOn: $prefs.keepAwake)
                 }
                 Section {
+                    Toggle("Tageszeit & Jahreszeit", isOn: $garden.livingSky)
+                    Stepper("Gießzeit: \(garden.breakMinutes) min", value: $garden.breakMinutes, in: 1...30)
+                } footer: {
+                    Text("Der Himmel über deiner Insel folgt der echten Uhrzeit, das Wetter dem Monat. Die Gießzeit ist die Pause nach einer Session.")
+                }
+                Section {
+                    BackupButtons(garden: garden)
                     Button {
                         dismiss()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { AppModel.shared.showOnboarding = true }
@@ -213,7 +229,7 @@ struct SettingsSheet: View {
                         Label("Einführung erneut ansehen", systemImage: "sparkles")
                     }
                 } footer: {
-                    Text("Dein Fortschritt wird nur auf diesem Gerät gespeichert.")
+                    Text("Dein Fortschritt wird nur auf diesem Gerät gespeichert. Die Sicherung lässt sich auch in der Web-App und der Mac-App laden – und umgekehrt.")
                 }
             }
             .tint(Palette.stem)

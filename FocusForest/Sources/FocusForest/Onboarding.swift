@@ -127,6 +127,7 @@ struct OnboardingView: View {
             step("timer", "Zeit wählen & pflanzen", "Stell ein, wie lange du dich konzentrieren willst.")
             step("leaf.fill", "Deine Pflanze wächst mit", "Solange du fokussiert bleibst, wächst sie vom Keimling zur vollen Pracht.")
             step("mountain.2.fill", "Deine Insel füllt sich", "Jede Session pflanzt sie auf deine Insel. Bei 30 Pflanzen ist sie vollendet – und eine neue taucht auf.")
+            step("heart.fill", "Hier stirbt keine Pflanze", "Hörst du früher auf, bleibt sie als Setzling stehen und wächst beim nächsten Mal weiter.")
             Spacer(minLength: 0)
         }
     }
@@ -223,6 +224,8 @@ struct OnboardingView: View {
             step("map.fill", "Mehr entdecken",
                  "Unter „Insel“ kannst du zoomen und Wege, Flüsse und Brücken malen. „Pflanzen“ zeigt alles, was du freischalten kannst.")
             #endif
+            step("pawprint.fill", "Deine Insel lebt",
+                 "Sie folgt Tageszeit und Jahreszeit, mit der Zeit ziehen Tiere ein – und ein Wochenziel bringt den Leuchtturm zum Leuchten.")
             Spacer(minLength: 0)
         }
     }

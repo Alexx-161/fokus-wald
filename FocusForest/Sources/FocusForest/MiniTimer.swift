@@ -90,14 +90,15 @@ struct MiniTimerView: View {
                         let unit = size.height * 0.95 / (0.2 + 0.4 * TreeMath.smooth(0, 1, p))
                         PlantPainter.draw(ctx, species: species, base: CGPoint(x: size.width / 2, y: size.height),
                                           unit: unit, progress: p, seed: timer.seed,
-                                          time: timeline.date.timeIntervalSinceReferenceDate, ground: false, detail: false)
+                                          time: timeline.date.timeIntervalSinceReferenceDate, ground: false, detail: false,
+                                          golden: timer.growsGolden)
                     }
                     .padding(12)
                 }
                 .frame(width: 58, height: 58)
 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(TimeFormat.clock(timer.remaining(at: timeline.date)))
+                    Text(TimeFormat.clock(timer.isOnBreak ? timer.breakRemaining(at: timeline.date) : timer.remaining(at: timeline.date)))
                         .font(.system(size: 24, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                         .opacity(timer.phase == .paused ? 0.5 : 1)
@@ -136,10 +137,10 @@ struct MiniTimerView: View {
 
     private func status(_ species: PlantSpecies) -> String {
         switch timer.phase {
-        case .idle: return "Bereit: \(species.name)"
+        case .idle: return timer.pending == nil ? "Bereit: \(species.name)" : "Setzling: \(species.name)"
         case .running: return "\(species.name) wächst …"
         case .paused: return "Pausiert"
-        case .finished: return "Fertig – \(species.name)!"
+        case .finished: return timer.isOnBreak ? "Gießzeit" : "Fertig – \(species.name)!"
         }
     }
 

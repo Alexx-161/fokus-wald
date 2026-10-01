@@ -12,8 +12,8 @@ MAC = "../FocusForest/Sources/FocusForest"
 BUNDLE_ID = "io.github.alexx161.fokuswald"
 
 # Code shared with the Mac app lives in the Mac package and is compiled into the iOS targets as well.
-SHARED_APP = ["Theme", "Species", "PlantPainter", "IslandPainter", "Core", "Components", "IslandView",
-              "OverviewViews", "Onboarding"]
+SHARED_APP = ["Theme", "Species", "PlantPainter", "IslandPainter", "Living", "Core", "Backup", "Components",
+              "SessionViews", "IslandView", "IslandExport", "OverviewViews", "Onboarding"]
 SHARED_WIDGET = ["Theme", "Species", "PlantPainter"]
 APP_SOURCES = ["FokusWald/FokusWaldApp.swift", "FokusWald/AppModel.swift", "FokusWald/TimerScreen.swift"]
 BOTH_SOURCES = ["Shared/FocusActivityAttributes.swift"]

@@ -41,6 +41,11 @@ struct IslandViewport {
                          y: size.height / 2 - CGFloat(minY + maxY) / 2 * scale + pan.height + bob)
     }
 
+    init(scale: CGFloat, origin: CGPoint) {
+        self.scale = scale
+        self.origin = origin
+    }
+
     func view(_ p: CGPoint) -> CGPoint { CGPoint(x: origin.x + p.x * scale, y: origin.y + p.y * scale) }
     func world(_ v: CGPoint) -> CGPoint { CGPoint(x: (v.x - origin.x) / scale, y: (v.y - origin.y) / scale) }
 }
@@ -49,6 +54,23 @@ struct GrowingPlant {
     let species: PlantSpecies
     let seed: Double
     let progress: Double
+    /// Focus minutes the plant will hold once the session completes.
+    let minutes: Int
+}
+
+/// Everything on an island beyond its plants and decorations: sky mood, animals, lighthouse and seedbed.
+struct IslandScene {
+    enum Lighthouse { case none, dark, lit }
+
+    /// Local time of day (0..<24) for the sky; nil keeps the theme's plain sky.
+    var hour: Double?
+    /// Month (1–12) for seasonal weather; nil for none.
+    var month: Int?
+    var residents: Set<Resident> = []
+    var lighthouse: Lighthouse = .none
+    var saplings: [Sapling] = []
+
+    static let plain = IslandScene()
 }
 
 enum IslandPainter {
@@ -56,12 +78,20 @@ enum IslandPainter {
 
     static func draw(_ ctx: GraphicsContext, size: CGSize, viewport vp: IslandViewport, shape: IslandShape,
                      plants: [PlantRecord], growing: GrowingPlant?, decorations: [Decoration], draft: Decoration?,
-                     complete: Bool, time: Double) {
+                     complete: Bool, time: Double, scene: IslandScene = .plain) {
+        // Dark skies already are night, so the time of day only tints light ones.
+        let daylight = Daylight(hour: ctx.environment.colorScheme == .dark ? nil : scene.hour)
         ctx.fill(Path(CGRect(origin: .zero, size: size)),
                  with: .linearGradient(Gradient(colors: [Palette.skyTop, Palette.skyBottom]),
                                        startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
-        if AppTheme.current.particles == .stars { drawStars(ctx, size: size, time: time) }
-        drawClouds(ctx, size: size, time: time)
+        LivingPainter.drawSkyMood(ctx, size: size, daylight: daylight)
+        if AppTheme.current.particles == .stars {
+            drawStars(ctx, size: size, time: time, opacity: 1)
+        } else if daylight.night > 0.05 {
+            drawStars(ctx, size: size, time: time, opacity: daylight.night)
+        }
+        LivingPainter.drawSunAndMoon(ctx, size: size, daylight: daylight)
+        drawClouds(ctx, size: size, time: time, opacity: 0.85 * (1 - 0.55 * daylight.night))
 
         let s = vp.scale
         let rx = shape.rx, ry = shape.ry, depth = shape.depth
@@ -105,38 +135,79 @@ enum IslandPainter {
         for d in all where d.kind == .path { drawPath(ground, d, vp: vp) }
         for d in all where d.kind == .bridge { drawBridge(ctx, d, vp: vp) }
 
-        var items: [(pos: CGPoint, species: PlantSpecies, seed: Double, minutes: Int, progress: Double)] =
-            plants.enumerated().map { (IslandShape.position($0.offset), $0.element.species, $0.element.seed, $0.element.minutes, 1) }
+        // Everything standing on the grass is drawn back to front.
+        var items: [(y: Double, draw: (GraphicsContext) -> Void)] = []
+        func addPlant(_ pos: CGPoint, _ species: PlantSpecies, seed: Double, minutes: Int, progress: Double) {
+            let factor = sizeFactor(minutes: minutes, species: species)
+            let depthFactor = 0.92 + 0.1 * (pos.y / ry)
+            let unit = CGFloat(1.55 * factor * depthFactor) * s
+            items.append((pos.y, { c in
+                c.fill(ellipse(pos.x, pos.y, 0.3 * factor, 0.08), with: .color(Palette.grassDark.opacity(0.7)))
+                PlantPainter.draw(c, species: species, base: vp.view(pos), unit: unit, progress: progress, seed: seed,
+                                  time: time, ground: false, detail: unit > 40,
+                                  golden: PlantSpecies.isGolden(minutes: minutes))
+            }))
+        }
+        for (index, plant) in plants.enumerated() {
+            addPlant(IslandShape.position(index), plant.species, seed: plant.seed, minutes: plant.minutes, progress: 1)
+        }
         if let growing {
-            items.append((IslandShape.position(plants.count), growing.species, growing.seed, 25, growing.progress))
+            addPlant(IslandShape.position(plants.count), growing.species, seed: growing.seed, minutes: growing.minutes,
+                     progress: growing.progress)
         }
-        for item in items.sorted(by: { $0.pos.y < $1.pos.y }) {
-            let sizeFactor = M.clamp(0.75 + Double(item.minutes) / 100, 0.8, 1.35) * item.species.islandScale
-            let depthFactor = 0.92 + 0.1 * (item.pos.y / ry)
-            let unit = CGFloat(1.55 * sizeFactor * depthFactor) * s
-            ctx.fill(ellipse(item.pos.x, item.pos.y, 0.3 * sizeFactor, 0.08), with: .color(Palette.grassDark.opacity(0.7)))
-            PlantPainter.draw(ctx, species: item.species, base: vp.view(item.pos), unit: unit, progress: item.progress,
-                              seed: item.seed, time: time, ground: false, detail: unit > 40)
-        }
+        items += LivingPainter.groundItems(scene, vp: vp, shape: shape, time: time, night: daylight.night)
+        for item in items.sorted(by: { $0.y < $1.y }) { item.draw(ctx) }
 
         if complete { drawFlag(ctx, at: pt(rx * 0.78, -ry * 0.18), scale: s, time: time) }
-        switch AppTheme.current.particles {
-        case .snow: drawFalling(ctx, size: size, time: time, petals: false)
-        case .petals: drawFalling(ctx, size: size, time: time, petals: true)
-        case .stars, .none: break
+        LivingPainter.drawAir(ctx, scene, vp: vp, shape: shape, time: time, night: daylight.night)
+        if daylight.night > 0 {
+            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Daylight.nightColor.opacity(0.24 * daylight.night)))
         }
+        LivingPainter.drawLights(ctx, scene, vp: vp, shape: shape, time: time, night: daylight.night)
+
+        switch AppTheme.current.particles {
+        case .snow: drawFalling(ctx, size: size, time: time, kind: .snow, count: 55)
+        case .petals: drawFalling(ctx, size: size, time: time, kind: .petals, count: 26)
+        case .stars: break
+        case .none:
+            // Themes without weather of their own show a light version of the real season.
+            switch scene.month {
+            case 3?, 4?, 5?: drawFalling(ctx, size: size, time: time, kind: .petals, count: 9)
+            case 9?, 10?, 11?: drawFalling(ctx, size: size, time: time, kind: .leaves, count: 12)
+            case 12?, 1?, 2?: drawFalling(ctx, size: size, time: time, kind: .snow, count: 22)
+            default: break
+            }
+        }
+    }
+
+    static func sizeFactor(minutes: Int, species: PlantSpecies) -> Double {
+        M.clamp(0.75 + Double(minutes) / 100, 0.8, 1.35) * species.islandScale
+    }
+
+    /// The plant under a point in island world coordinates; the one furthest to the front wins.
+    static func plant(at point: CGPoint, in plants: [PlantRecord]) -> PlantRecord? {
+        var best: (plant: PlantRecord, y: Double)?
+        for (index, plant) in plants.enumerated() {
+            let pos = IslandShape.position(index)
+            let size = sizeFactor(minutes: plant.minutes, species: plant.species)
+            let height = 0.95 * size
+            let dx = (point.x - pos.x) / (0.42 * size)
+            let dy = (point.y - (pos.y - height * 0.5)) / (height * 0.62)
+            if dx * dx + dy * dy <= 1, best == nil || pos.y > best!.y { best = (plant, pos.y) }
+        }
+        return best?.plant
     }
 
     // MARK: Theme weather
 
-    private static func drawStars(_ ctx: GraphicsContext, size: CGSize, time: Double) {
+    private static func drawStars(_ ctx: GraphicsContext, size: CGSize, time: Double, opacity: Double) {
         for i in 0..<60 {
             let x = M.rnd(11, i) * size.width
             let y = M.rnd(12, i) * size.height * 0.75
             let twinkle = time == 0 ? 0.8 : 0.45 + 0.55 * (0.5 + 0.5 * sin(time * (1 + M.rnd(13, i) * 2) + Double(i)))
             let r = 0.8 + M.rnd(14, i) * 1.4
             var c = ctx
-            c.opacity = twinkle
+            c.opacity = twinkle * opacity
             if i % 9 == 0 {
                 c.fill(PlantPainter.star(at: CGPoint(x: x, y: y), radius: CGFloat(r * 2.6)), with: .color(Color(hex: 0xFFF3C4)))
             } else {
@@ -145,23 +216,28 @@ enum IslandPainter {
         }
     }
 
-    private static func drawFalling(_ ctx: GraphicsContext, size: CGSize, time: Double, petals: Bool) {
-        let count = petals ? 26 : 55
+    enum Falling { case snow, petals, leaves }
+
+    private static let leafColors: [Color] = [0xF2A93B, 0xE5646B, 0xD99A1E].map { Color(hex: $0) }
+
+    private static func drawFalling(_ ctx: GraphicsContext, size: CGSize, time: Double, kind: Falling, count: Int) {
+        let flakes = kind == .snow
         for i in 0..<count {
-            let speed = (petals ? 14 : 20) + M.rnd(21, i) * 22
+            let speed = (flakes ? 20 : 14) + M.rnd(21, i) * 22
             let span = size.height + 40
             let y = (M.rnd(22, i) * span + time * speed).truncatingRemainder(dividingBy: span) - 20
-            let x = M.rnd(23, i) * size.width + sin(time * 0.8 + Double(i)) * (petals ? 18 : 8)
-            if petals {
+            let x = M.rnd(23, i) * size.width + sin(time * 0.8 + Double(i)) * (flakes ? 8 : 18)
+            if flakes {
+                let r = 1.2 + M.rnd(25, i) * 2
+                ctx.fill(M.circle(CGFloat(x), CGFloat(y), CGFloat(r)), with: .color(.white.opacity(0.9)))
+            } else {
                 var c = ctx
                 c.translateBy(x: x, y: y)
                 c.rotate(by: .radians(time * (0.6 + M.rnd(24, i)) + Double(i)))
                 c.opacity = 0.85
-                c.fill(Path(ellipseIn: CGRect(x: -5, y: -3, width: 10, height: 6)),
-                       with: .color(i.isMultiple(of: 3) ? Color(hex: 0xFFFFFF) : Color(hex: 0xF7B6C8)))
-            } else {
-                let r = 1.2 + M.rnd(25, i) * 2
-                ctx.fill(M.circle(CGFloat(x), CGFloat(y), CGFloat(r)), with: .color(.white.opacity(0.9)))
+                let color = kind == .leaves ? leafColors[i % leafColors.count]
+                    : i.isMultiple(of: 3) ? Color(hex: 0xFFFFFF) : Color(hex: 0xF7B6C8)
+                c.fill(Path(ellipseIn: CGRect(x: -5, y: -3, width: 10, height: 6)), with: .color(color))
             }
         }
     }
@@ -246,7 +322,7 @@ enum IslandPainter {
                  with: .color(.white))
     }
 
-    private static func drawClouds(_ ctx: GraphicsContext, size: CGSize, time: Double) {
+    private static func drawClouds(_ ctx: GraphicsContext, size: CGSize, time: Double, opacity: Double) {
         let clouds: [(y: Double, speed: Double, scale: Double, offset: Double)] = [
             (0.12, 6, 1.0, 0.1), (0.24, 4, 0.7, 0.55), (0.08, 3, 0.55, 0.8), (0.32, 5, 0.85, 0.3),
         ]
@@ -257,23 +333,25 @@ enum IslandPainter {
             let r = 38 * c.scale
             for (dx, dy, k) in [(-0.9, 0.2, 0.6), (0.0, 0.0, 0.85), (0.9, 0.25, 0.55)] {
                 ctx.fill(M.circle(CGFloat(x + dx * r), CGFloat(y + dy * r), CGFloat(k * r)),
-                         with: .color(Palette.cloud.opacity(0.85)))
+                         with: .color(Palette.cloud.opacity(opacity)))
             }
         }
     }
 }
 
-/// Non-interactive island picture used for archive cards.
+/// Non-interactive island picture used for archive cards and shared images.
 struct IslandThumbnail: View {
     let plants: [PlantRecord]
     let decorations: [Decoration]
     let complete: Bool
+    var scene = IslandScene.plain
 
     var body: some View {
         Canvas { ctx, size in
             let shape = IslandShape(plantCount: plants.count)
             IslandPainter.draw(ctx, size: size, viewport: IslandViewport(size: size, island: shape), shape: shape,
-                               plants: plants, growing: nil, decorations: decorations, draft: nil, complete: complete, time: 0)
+                               plants: plants, growing: nil, decorations: decorations, draft: nil, complete: complete, time: 0,
+                               scene: scene)
         }
     }
 }

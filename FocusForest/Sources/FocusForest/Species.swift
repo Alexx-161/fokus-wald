@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum PlantCategory: String, CaseIterable, Identifiable {
-    case tree, flower, mushroom, special
+    case tree, flower, mushroom, special, seasonal
 
     var id: String { rawValue }
 
@@ -11,6 +11,7 @@ enum PlantCategory: String, CaseIterable, Identifiable {
         case .flower: return "Blumen"
         case .mushroom: return "Pilze"
         case .special: return "Besondere"
+        case .seasonal: return "Saison"
         }
     }
 
@@ -20,12 +21,14 @@ enum PlantCategory: String, CaseIterable, Identifiable {
         case .flower: return "camera.macro"
         case .mushroom: return "umbrella.fill"
         case .special: return "sparkles"
+        case .seasonal: return "calendar"
         }
     }
 }
 
 struct PlantSpecies: Identifiable {
-    enum Kind { case roundTree, pine, rainbow, crystal, tulip, sunflower, daisy, bell, toadstool, porcini, glowshroom }
+    /// `festive` is a pine decorated with baubles.
+    enum Kind { case roundTree, pine, festive, rainbow, crystal, tulip, sunflower, daisy, bell, toadstool, porcini, glowshroom }
 
     let id: String
     let name: String
@@ -40,10 +43,12 @@ struct PlantSpecies: Identifiable {
     let accent: Color
     /// Number of completed sessions needed before this plant can be chosen.
     let unlockAt: Int
+    /// Seasonal plants can only be planted during this month (1–12); nil for everything else.
+    let month: Int?
     let blurb: String
 
     private init(_ id: String, _ name: String, _ category: PlantCategory, _ kind: Kind,
-                 _ colors: [UInt32], unlockAt: Int, _ blurb: String) {
+                 _ colors: [UInt32], unlockAt: Int = 0, month: Int? = nil, _ blurb: String) {
         self.id = id
         self.name = name
         self.category = category
@@ -54,18 +59,27 @@ struct PlantSpecies: Identifiable {
         deep = Color(hex: colors[3])
         accent = Color(hex: colors[4])
         self.unlockAt = unlockAt
+        self.month = month
         self.blurb = blurb
     }
 
     /// Relative size on the island, so flowers and mushrooms stay smaller than trees.
     var islandScale: Double {
-        switch category {
-        case .tree: return 1.0
-        case .special: return 1.08
-        case .flower: return 0.72
-        case .mushroom: return 0.64
+        if category == .special { return 1.08 }
+        switch kind {
+        case .roundTree, .pine, .festive, .rainbow, .crystal: return 1.0
+        case .tulip, .sunflower, .daisy, .bell: return 0.72
+        case .toadstool, .porcini, .glowshroom: return 0.64
         }
     }
+
+    static let monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September",
+                             "Oktober", "November", "Dezember"]
+    var monthName: String? { month.map { Self.monthNames[$0 - 1] } }
+
+    /// Sessions of this length or more grow the rare golden variant.
+    static let goldenMinutes = 50
+    static func isGolden(minutes: Int) -> Bool { minutes >= goldenMinutes }
 
     static let all: [PlantSpecies] = [
         PlantSpecies("minze", "Minzbäumchen", .tree, .roundTree, [0x8FD694, 0x6BBF7A, 0xBDEBC1, 0x5BAE6C, 0xF07C7C],
@@ -99,6 +113,31 @@ struct PlantSpecies: Identifiable {
                      unlockAt: 15, "Funkelnde Kristalle statt Blätter."),
         PlantSpecies("regenbogenbaum", "Regenbogenbaum", .special, .rainbow, [0xF7B6C8, 0xC9B6F2, 0xFFFFFF, 0x8E7BD6, 0xFFFFFF],
                      unlockAt: 20, "Jedes Blätterbüschel in einer anderen Farbe."),
+
+        PlantSpecies("eisblume", "Eisblume", .seasonal, .crystal, [0xDDF1FB, 0xB9DCEF, 0xFFFFFF, 0x6FA9C9, 0xC9E6F7],
+                     month: 1, "Wächst nur, wenn es draußen klirrt."),
+        PlantSpecies("winterling", "Winterling", .seasonal, .daisy, [0xFFE066, 0xF0C63C, 0xFFF2A8, 0xD9A51E, 0xF2A93B],
+                     month: 2, "Gelber Farbtupfer im letzten Schnee."),
+        PlantSpecies("krokus", "Krokus", .seasonal, .tulip, [0xB59AE8, 0x957AD6, 0xDCCBF7, 0x7D62C4, 0xFFD45C],
+                     month: 3, "Schiebt sich als Erster durch den Schnee."),
+        PlantSpecies("osterglocke", "Osterglocke", .seasonal, .bell, [0xFFE066, 0xF2C53D, 0xFFF3B0, 0xD9A51E, 0xFFFFFF],
+                     month: 4, "Läutet den Frühling ein."),
+        PlantSpecies("apfelbluete", "Apfelblüte", .seasonal, .roundTree, [0xA9DDA0, 0x86C47C, 0xD3F0CC, 0x5BAE6C, 0xFFE3EC],
+                     month: 5, "Frisches Grün mit zartrosa Blüten."),
+        PlantSpecies("mohn", "Mohnblume", .seasonal, .daisy, [0xF0564A, 0xD23F36, 0xFF9A8F, 0xC9372F, 0xFFD45C],
+                     month: 6, "Leuchtend rot am Wegesrand."),
+        PlantSpecies("kornblume", "Kornblume", .seasonal, .daisy, [0x6F9BEA, 0x4F7CD6, 0xBBD2FA, 0x436FCB, 0xFFE9A3],
+                     month: 7, "So blau wie der Sommerhimmel."),
+        PlantSpecies("zitrone", "Zitronenbaum", .seasonal, .roundTree, [0x9BD67F, 0x79BE60, 0xC9EDB6, 0x5AA846, 0xFFE14D],
+                     month: 8, "Trägt kleine Sonnen als Früchte."),
+        PlantSpecies("pflaume", "Pflaumenbaum", .seasonal, .roundTree, [0x8CCB8E, 0x6BB174, 0xBFE6BF, 0x57A066, 0x8A5FBF],
+                     month: 9, "Süße lila Früchte zum Schulanfang."),
+        PlantSpecies("pfifferling", "Pfifferling", .seasonal, .porcini, [0xF6B544, 0xE0942B, 0xFFD98A, 0xD9861E, 0xFBE3B0],
+                     month: 10, "Goldgelb und nur im Herbst zu finden."),
+        PlantSpecies("nebelpilz", "Nebelpilz", .seasonal, .glowshroom, [0xB9A9E6, 0x9684D1, 0xDDD3F7, 0x8570C4, 0xE2D9FF],
+                     month: 11, "Schimmert im Novembernebel."),
+        PlantSpecies("christbaum", "Christbäumchen", .seasonal, .festive, [0x4FA06E, 0x3B8757, 0x86C9A0, 0x2F7A4C, 0xFFD66B],
+                     month: 12, "Geschmückt mit bunten Kugeln."),
     ]
 
     private static let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })

@@ -33,9 +33,9 @@ struct IslandView: View {
             switch self {
             case .look:
                 #if os(macOS)
-                return "Ziehen zum Verschieben · Trackpad-Pinch zum Zoomen"
+                return "Pflanze anklicken für ihr Tagebuch · Ziehen verschiebt"
                 #else
-                return "Ziehen zum Verschieben · mit zwei Fingern zoomen"
+                return "Pflanze antippen für ihr Tagebuch · Ziehen verschiebt"
                 #endif
             case .path: return "Ziehe über die Insel, um einen Weg zu zeichnen"
             case .river: return "Ziehe über die Insel, um einen Fluss zu zeichnen"
@@ -51,6 +51,7 @@ struct IslandView: View {
     @State private var pan: CGSize = .zero
     @State private var panBase: CGSize = .zero
     @State private var draft: [CGPoint] = []
+    @State private var selectedPlant: UUID?
 
     private var plants: [PlantRecord] { garden.plants(on: island) }
     private var isGrowingHere: Bool {
@@ -68,6 +69,8 @@ struct IslandView: View {
     }
 
     var body: some View {
+        // Built once per update rather than per frame; only the time of day is refreshed while drawing.
+        let scene = garden.scene(for: island, timer: timer)
         GeometryReader { geo in
             TimelineView(.animation(minimumInterval: 1.0 / 30)) { timeline in
                 Canvas { ctx, size in
@@ -76,11 +79,14 @@ struct IslandView: View {
                     let bob: CGFloat = tool == .look && zoom == 1 ? CGFloat(sin(t * 0.7)) * 4 : 0
                     let vp = IslandViewport(size: size, island: shape, zoom: zoom, pan: pan, bob: bob)
                     let growing = isGrowingHere
-                        ? GrowingPlant(species: timer.species, seed: timer.seed, progress: timer.progress(at: timeline.date))
+                        ? GrowingPlant(species: timer.species, seed: timer.seed, progress: timer.progress(at: timeline.date),
+                                       minutes: timer.plannedMinutes)
                         : nil
+                    var scene = scene
+                    if scene.hour != nil { scene.hour = Daylight.hour(of: timeline.date) }
                     IslandPainter.draw(ctx, size: size, viewport: vp, shape: shape, plants: plants, growing: growing,
                                        decorations: garden.decorations(on: island), draft: draftDecoration,
-                                       complete: garden.isComplete(island), time: t)
+                                       complete: garden.isComplete(island), time: t, scene: scene)
                 }
             }
             .contentShape(Rectangle())
@@ -96,7 +102,18 @@ struct IslandView: View {
             )
         }
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(alignment: .top) { header.padding(12) }
+        .overlay(alignment: .top) {
+            VStack(spacing: 8) {
+                header
+                if let plant = plants.first(where: { $0.id == selectedPlant }) {
+                    PlantDetailCard(plant: plant, garden: garden) { selectedPlant = nil }
+                        .id(plant.id)
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                }
+            }
+            .padding(12)
+            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: selectedPlant)
+        }
         .overlay(alignment: .bottom) { toolbar.padding(12) }
         .onChange(of: island) { _, _ in resetView() }
     }
@@ -131,6 +148,11 @@ struct IslandView: View {
                 switch tool {
                 case .look:
                     panBase = pan
+                    // A tap rather than a drag opens the diary entry of the plant under it.
+                    if hypot(value.translation.width, value.translation.height) < 5 {
+                        let vp = IslandViewport(size: size, island: shape(), zoom: zoom, pan: pan)
+                        selectedPlant = IslandPainter.plant(at: vp.world(value.location), in: plants)?.id
+                    }
                 case .path, .river:
                     if draft.count >= 2 { garden.addDecoration(tool == .river ? .river : .path, points: draft, island: island) }
                 case .bridge:
@@ -158,6 +180,7 @@ struct IslandView: View {
     private func resetView() {
         setZoom(1)
         draft = []
+        selectedPlant = nil
     }
 
     // MARK: Overlays
@@ -185,6 +208,10 @@ struct IslandView: View {
                 .buttonStyle(RoundIconButtonStyle(size: 26))
                 .opacity(island < garden.currentIsland ? 1 : 0)
                 .disabled(island >= garden.currentIsland)
+            Button { IslandExport.share(garden: garden, island: island) } label: { Image(systemName: "square.and.arrow.up") }
+                .buttonStyle(RoundIconButtonStyle(size: 26))
+                .help("Insel als Bild sichern oder teilen")
+                .accessibilityLabel("Insel als Bild teilen")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

@@ -34,6 +34,7 @@ enum PlantPainter {
         (0, 0.12, 0.95), (-0.62, 0.30, 0.62), (0.62, 0.30, 0.62),
         (-0.36, -0.42, 0.64), (0.37, -0.40, 0.60), (0, -0.62, 0.55),
     ]
+    private static let baubles: [Color] = [0xE8645A, 0xFFD66B, 0x8CCBEF].map { Color(hex: $0) }
     private static let rainbow: [Color] = [0xF7A8B8, 0xFFC98B, 0xFFE89A, 0xA8E6A1, 0xA8D2F5, 0xC9B6F2].map { Color(hex: $0) }
 
     static func draw(
@@ -45,7 +46,8 @@ enum PlantPainter {
         seed: Double,
         time: Double,
         ground: Bool = true,
-        detail: Bool = true
+        detail: Bool = true,
+        golden: Bool = false
     ) {
         let g = CGFloat(M.smooth(0, 1, p))
         var ctx = context
@@ -63,7 +65,7 @@ enum PlantPainter {
 
         let face: (center: CGPoint, radius: CGFloat)?
         switch s.kind {
-        case .roundTree, .pine, .rainbow, .crystal:
+        case .roundTree, .pine, .festive, .rainbow, .crystal:
             face = drawTree(ctx, s, u: u, g: g, p: p, seed: seed, time: time, detail: detail)
         case .tulip, .sunflower, .daisy, .bell:
             face = drawFlower(ctx, s, u: u, g: g, p: p, seed: seed)
@@ -72,6 +74,30 @@ enum PlantPainter {
         }
         if detail, let face {
             drawFace(ctx, center: face.center, radius: face.radius, p: p, seed: seed, time: time)
+        }
+        if golden, let face {
+            drawGolden(ctx, center: face.center, radius: face.radius, p: p, seed: seed, time: time)
+        }
+    }
+
+    /// The rare variant grown by long sessions: a warm glow and twinkling golden stars around the crown.
+    private static func drawGolden(_ ctx: GraphicsContext, center c: CGPoint, radius R: CGFloat,
+                                   p: Double, seed: Double, time: Double) {
+        let a = M.smooth(0.8, 1.0, p)
+        guard a > 0.01 else { return }
+        let glowR = R * 2.1
+        ctx.fill(M.circle(c.x, c.y, glowR), with: .radialGradient(
+            Gradient(colors: [Palette.star.opacity(0.3 * a), Palette.star.opacity(0)]),
+            center: c, startRadius: 0, endRadius: glowR))
+        for i in 0..<5 {
+            let ang = Double(i) * 2 * .pi / 5 + seed * 6 - .pi / 2
+            let rr = R * CGFloat(1.15 + 0.3 * M.rnd(seed, 70 + i))
+            let twinkle = time == 0 ? 1 : 0.45 + 0.55 * (0.5 + 0.5 * sin(time * 2.2 + Double(i) * 1.9))
+            var sc = ctx
+            sc.opacity = a * twinkle
+            let at = CGPoint(x: c.x + CGFloat(cos(ang)) * rr, y: c.y + CGFloat(sin(ang)) * rr * 0.85)
+            sc.fill(star(at: at, radius: R * 0.16), with: .color(Palette.star))
+            sc.fill(M.circle(at.x, at.y, R * 0.04), with: .color(.white))
         }
     }
 
@@ -93,7 +119,7 @@ enum PlantPainter {
         guard M.smooth(0.18, 1, p) > 0.001 else { return nil }
         let crown: (CGPoint, CGFloat)
         switch s.kind {
-        case .pine: crown = drawPine(ctx, s, u: u, trunkH: trunkH, p: p)
+        case .pine, .festive: crown = drawPine(ctx, s, u: u, trunkH: trunkH, p: p)
         case .crystal: crown = drawCrystal(ctx, s, u: u, trunkH: trunkH, p: p, seed: seed, time: time)
         case .rainbow:
             crown = drawRound(ctx, u: u, trunkH: trunkH, p: p, seed: seed) { i in
@@ -172,6 +198,12 @@ enum PlantPainter {
             ctx.fill(tri, with: .color(s.main))
             ctx.stroke(tri, with: .color(s.main), style: corner)
             ctx.fill(M.circle(-w * 0.14, baseY - h * 0.55, u * 0.016 * a), with: .color(s.light))
+            if s.kind == .festive {
+                for (j, dx) in [-0.24, 0.05, 0.27].enumerated() where k < 2 || j != 1 {
+                    ctx.fill(M.circle(w * CGFloat(dx), baseY - h * CGFloat(0.12 + 0.12 * Double(j % 2)), u * 0.022 * a),
+                             with: .color(baubles[(j + k) % baubles.count]))
+                }
+            }
             if k == 0 { faceCenter = CGPoint(x: 0, y: baseY - h * 0.3) }
             apex = CGPoint(x: 0, y: baseY - h)
         }
@@ -463,16 +495,19 @@ enum PlantPainter {
     }
 }
 
-/// Static, fully grown preview of a species (catalog cards, pickers).
+/// Static preview of a species, fully grown unless told otherwise (catalog cards, pickers, saplings).
 struct PlantIcon: View {
     let species: PlantSpecies
     var seed: Double = 0.37
+    var progress: Double = 1
+    var golden = false
 
     var body: some View {
         Canvas { ctx, size in
             let u = min(size.width, size.height / 0.7)
             PlantPainter.draw(ctx, species: species, base: CGPoint(x: size.width / 2, y: size.height * 0.93),
-                              unit: u, progress: 1, seed: seed, time: 0, ground: false, detail: u > 40)
+                              unit: u, progress: progress, seed: seed, time: 0, ground: false, detail: u > 40,
+                              golden: golden)
         }
     }
 }

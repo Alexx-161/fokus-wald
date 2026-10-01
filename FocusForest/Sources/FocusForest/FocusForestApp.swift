@@ -42,10 +42,13 @@ private struct MenuBarMenu: View {
         }
         Divider()
         switch timer.phase {
-        case .idle: Button("\(timer.minutes) min pflanzen") { timer.start() }
+        case .idle: Button(timer.pending == nil ? "\(timer.minutes) min pflanzen" : "Setzling \(timer.minutes) min weiterziehen") { timer.start() }
         case .running: Button("Pause") { timer.pause() }
         case .paused: Button("Weiter") { timer.resume() }
-        case .finished: Button("Neue Pflanze vorbereiten") { timer.reset() }
+        case .finished: Button(timer.isOnBreak ? "Gießzeit beenden" : "Neue Pflanze vorbereiten") { timer.reset() }
+        }
+        if timer.isActive {
+            Button("Aufhören – als Setzling aufheben") { timer.giveUp() }
         }
         Divider()
         Button("Beenden") { NSApp.terminate(nil) }
@@ -60,11 +63,13 @@ private struct MenuBarMenu: View {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var notchController: NotchPanelController?
     private var miniTimer: MiniTimerController?
+    private var extras: MacExtras?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let state = AppState.shared
         notchController = NotchPanelController(timer: state.timer, settings: state.prefs)
         miniTimer = MiniTimerController(prefs: state.prefs)
+        extras = MacExtras(timer: state.timer, prefs: state.prefs)
     }
 
     // The timer keeps running (and the notch widget stays) after the window is closed.

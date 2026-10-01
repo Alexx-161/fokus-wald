@@ -27,13 +27,28 @@ export const CATEGORIES = [
   { id: 'flower', title: 'Blumen', icon: 'flower' },
   { id: 'mushroom', title: 'Pilze', icon: 'mushroom' },
   { id: 'special', title: 'Besondere', icon: 'sparkles' },
+  { id: 'seasonal', title: 'Saison', icon: 'calendar' },
 ];
 
-function species(id, name, category, kind, colors, unlockAt, blurb) {
+export const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September',
+  'Oktober', 'November', 'Dezember'];
+
+const KIND_SCALE = {
+  roundTree: 1.0, pine: 1.0, festive: 1.0, rainbow: 1.0, crystal: 1.0,
+  tulip: 0.72, sunflower: 0.72, daisy: 0.72, bell: 0.72,
+  toadstool: 0.64, porcini: 0.64, glowshroom: 0.64,
+};
+
+// `month` (1–12) marks a seasonal plant, which can only be planted during that month.
+function species(id, name, category, kind, colors, unlockAt, blurb, month = null) {
   const [main, shade, light, deep, accent] = colors.map(hex);
-  const islandScale = { tree: 1.0, special: 1.08, flower: 0.72, mushroom: 0.64 }[category];
-  return { id, name, category, kind, main, shade, light, deep, accent, unlockAt, blurb, islandScale };
+  const islandScale = category === 'special' ? 1.08 : KIND_SCALE[kind];
+  return { id, name, category, kind, main, shade, light, deep, accent, unlockAt, blurb, islandScale, month };
 }
+
+/** Sessions of this length or more grow the rare golden variant. */
+export const GOLDEN_MINUTES = 50;
+export const isGolden = (minutes) => minutes >= GOLDEN_MINUTES;
 
 export const SPECIES = [
   species('minze', 'Minzbäumchen', 'tree', 'roundTree', [0x8FD694, 0x6BBF7A, 0xBDEBC1, 0x5BAE6C, 0xF07C7C], 0, 'Frisch und rund – trägt kleine rote Äpfel.'),
@@ -53,6 +68,19 @@ export const SPECIES = [
 
   species('kristallbaum', 'Kristallbaum', 'special', 'crystal', [0xA8D8F5, 0x84BDE6, 0xE1F3FD, 0x5C9FD1, 0xD7C6F7], 15, 'Funkelnde Kristalle statt Blätter.'),
   species('regenbogenbaum', 'Regenbogenbaum', 'special', 'rainbow', [0xF7B6C8, 0xC9B6F2, 0xFFFFFF, 0x8E7BD6, 0xFFFFFF], 20, 'Jedes Blätterbüschel in einer anderen Farbe.'),
+
+  species('eisblume', 'Eisblume', 'seasonal', 'crystal', [0xDDF1FB, 0xB9DCEF, 0xFFFFFF, 0x6FA9C9, 0xC9E6F7], 0, 'Wächst nur, wenn es draußen klirrt.', 1),
+  species('winterling', 'Winterling', 'seasonal', 'daisy', [0xFFE066, 0xF0C63C, 0xFFF2A8, 0xD9A51E, 0xF2A93B], 0, 'Gelber Farbtupfer im letzten Schnee.', 2),
+  species('krokus', 'Krokus', 'seasonal', 'tulip', [0xB59AE8, 0x957AD6, 0xDCCBF7, 0x7D62C4, 0xFFD45C], 0, 'Schiebt sich als Erster durch den Schnee.', 3),
+  species('osterglocke', 'Osterglocke', 'seasonal', 'bell', [0xFFE066, 0xF2C53D, 0xFFF3B0, 0xD9A51E, 0xFFFFFF], 0, 'Läutet den Frühling ein.', 4),
+  species('apfelbluete', 'Apfelblüte', 'seasonal', 'roundTree', [0xA9DDA0, 0x86C47C, 0xD3F0CC, 0x5BAE6C, 0xFFE3EC], 0, 'Frisches Grün mit zartrosa Blüten.', 5),
+  species('mohn', 'Mohnblume', 'seasonal', 'daisy', [0xF0564A, 0xD23F36, 0xFF9A8F, 0xC9372F, 0xFFD45C], 0, 'Leuchtend rot am Wegesrand.', 6),
+  species('kornblume', 'Kornblume', 'seasonal', 'daisy', [0x6F9BEA, 0x4F7CD6, 0xBBD2FA, 0x436FCB, 0xFFE9A3], 0, 'So blau wie der Sommerhimmel.', 7),
+  species('zitrone', 'Zitronenbaum', 'seasonal', 'roundTree', [0x9BD67F, 0x79BE60, 0xC9EDB6, 0x5AA846, 0xFFE14D], 0, 'Trägt kleine Sonnen als Früchte.', 8),
+  species('pflaume', 'Pflaumenbaum', 'seasonal', 'roundTree', [0x8CCB8E, 0x6BB174, 0xBFE6BF, 0x57A066, 0x8A5FBF], 0, 'Süße lila Früchte zum Schulanfang.', 9),
+  species('pfifferling', 'Pfifferling', 'seasonal', 'porcini', [0xF6B544, 0xE0942B, 0xFFD98A, 0xD9861E, 0xFBE3B0], 0, 'Goldgelb und nur im Herbst zu finden.', 10),
+  species('nebelpilz', 'Nebelpilz', 'seasonal', 'glowshroom', [0xB9A9E6, 0x9684D1, 0xDDD3F7, 0x8570C4, 0xE2D9FF], 0, 'Schimmert im Novembernebel.', 11),
+  species('christbaum', 'Christbäumchen', 'seasonal', 'festive', [0x4FA06E, 0x3B8757, 0x86C9A0, 0x2F7A4C, 0xFFD66B], 0, 'Geschmückt mit bunten Kugeln.', 12),
 ];
 
 const byID = new Map(SPECIES.map((s) => [s.id, s]));
@@ -106,6 +134,25 @@ export function resolveTheme(id, forceLight = false) {
 }
 
 export const onSystemThemeChange = (fn) => systemDark && systemDark.addEventListener('change', fn);
+
+export const TAG_COLORS = ['#5FAF6A', '#E07A99', '#7183D9', '#F2B93B', '#4FB7C2', '#DC8443', '#9179D6', '#C9473F'];
+
+/** Stable palette slot for a tag, so its color survives other tags being added or removed. */
+export function tagColor(tag) {
+  if (!tag) return null;
+  let slot = 0;
+  for (const ch of tag) slot = (slot * 31 + ch.codePointAt(0)) % 1000003;
+  return TAG_COLORS[slot % TAG_COLORS.length];
+}
+
+// Animals that move onto the island once a milestone is reached. They never leave again.
+export const RESIDENTS = [
+  { id: 'butterfly', name: 'Schmetterlinge', condition: 'ab 3 Pflanzen' },
+  { id: 'bird', name: 'Vogel', condition: 'ab 10 Pflanzen' },
+  { id: 'bunny', name: 'Hase', condition: 'erste vollendete Insel' },
+  { id: 'fox', name: 'Fuchs', condition: '7 Tage in Folge' },
+  { id: 'fireflies', name: 'Glühwürmchen', condition: '10 Stunden Fokuszeit · kommen nachts' },
+];
 
 export const ISLAND_CAPACITY = 30;
 

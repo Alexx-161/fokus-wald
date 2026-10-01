@@ -87,6 +87,13 @@
 			path = FokusWaldWidgets.appex;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		1BC741F607AD752E1B7B6AFF = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = Living.swift;
+			path = ../FocusForest/Sources/FocusForest/Living.swift;
+			sourceTree = SOURCE_ROOT;
+		};
 		1D97B77EAD2380603A3F2A82 = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -140,6 +147,10 @@
 			isa = PBXBuildFile;
 			fileRef = 245B807FBC981083450FABD4;
 		};
+		275015B2EB95D73800B6E0B5 = {
+			isa = PBXBuildFile;
+			fileRef = E97A14695107DE84D43967A0;
+		};
 		2761849A6D0E26CA4E1817A1 = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -166,6 +177,10 @@
 			);
 			name = Products;
 			sourceTree = "<group>";
+		};
+		306F665D3F643837E5A0F8B7 = {
+			isa = PBXBuildFile;
+			fileRef = 619F56CA4F6CD780F502C31C;
 		};
 		3767089F7E3E2D6F95DF1B0E = {
 			isa = PBXBuildFile;
@@ -231,9 +246,13 @@
 				F40FE84A87A09CE0744A4E5D,
 				0CFCB5B7FC557F4CD862267A,
 				9FE34632443A575A64041A0E,
+				9F8A8AA094EEBA05124486F7,
 				8BE055EACADF721CBF330DEE,
+				6DA11045BBB5AFCA04F2EAB6,
 				EF09A8AEF7D17AF9BBCB9CE2,
+				306F665D3F643837E5A0F8B7,
 				F6306374774F42E477FCFF66,
+				275015B2EB95D73800B6E0B5,
 				DAB00E39340B88B7C64D00AA,
 				ED04B18CE106CEF857F213A4,
 				1133906371521941D8005C5D,
@@ -289,13 +308,17 @@
 		530F2D991FE15C9C743F3F1B = {
 			isa = PBXGroup;
 			children = (
+				BA77760551A1A1FE2C54BB9A,
 				14A2D90FB03AEDA943DA1B69,
 				90A8CBC5F4D88C2C836C57ED,
+				E97A14695107DE84D43967A0,
 				C81F9F46425DD6A51BB9EE7B,
 				F9441C0EF4F13FAE9ADB468E,
+				1BC741F607AD752E1B7B6AFF,
 				E1E4E8D79C23168EA253AE18,
 				4303C5C654FF6990D42F4EF2,
 				CC3D06682286477CACE58668,
+				619F56CA4F6CD780F502C31C,
 				FB04B078592ECC046AB4C2BE,
 				E30686AF35567AE2821CC4BC,
 			);
@@ -322,6 +345,17 @@
 			name = TimerScreen.swift;
 			path = FokusWald/TimerScreen.swift;
 			sourceTree = SOURCE_ROOT;
+		};
+		619F56CA4F6CD780F502C31C = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = SessionViews.swift;
+			path = ../FocusForest/Sources/FocusForest/SessionViews.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		6DA11045BBB5AFCA04F2EAB6 = {
+			isa = PBXBuildFile;
+			fileRef = BA77760551A1A1FE2C54BB9A;
 		};
 		6EFAB1ECC0D092E20FE51FCD = {
 			isa = PBXFrameworksBuildPhase;
@@ -375,6 +409,10 @@
 			remoteGlobalIDString = 0661F517A86C8F5C87C0EDBA;
 			remoteInfo = FokusWaldWidgets;
 		};
+		9F8A8AA094EEBA05124486F7 = {
+			isa = PBXBuildFile;
+			fileRef = 1BC741F607AD752E1B7B6AFF;
+		};
 		9FE34632443A575A64041A0E = {
 			isa = PBXBuildFile;
 			fileRef = C81F9F46425DD6A51BB9EE7B;
@@ -396,6 +434,13 @@
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA77760551A1A1FE2C54BB9A = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = Backup.swift;
+			path = ../FocusForest/Sources/FocusForest/Backup.swift;
+			sourceTree = SOURCE_ROOT;
 		};
 		C28449456A5A705A7479770B = {
 			isa = XCBuildConfiguration;
@@ -510,6 +555,13 @@
 			productName = FokusWald;
 			productReference = 84337AD8D27FCD69AF2C4FC2;
 			productType = "com.apple.product-type.application";
+		};
+		E97A14695107DE84D43967A0 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = IslandExport.swift;
+			path = ../FocusForest/Sources/FocusForest/IslandExport.swift;
+			sourceTree = SOURCE_ROOT;
 		};
 		ED04B18CE106CEF857F213A4 = {
 			isa = PBXBuildFile;

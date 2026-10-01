@@ -1,8 +1,8 @@
 // Offline support: cache the app shell, serve from cache first, refresh in the background.
-const CACHE = 'fokus-wald-v1';
+const CACHE = 'fokus-wald-v2';
 const FILES = [
   './', 'index.html', 'app.css', 'manifest.webmanifest',
-  'js/app.js', 'js/data.js', 'js/painter.js', 'js/island.js', 'js/store.js', 'js/icons.js',
+  'js/app.js', 'js/data.js', 'js/painter.js', 'js/island.js', 'js/living.js', 'js/store.js', 'js/icons.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 

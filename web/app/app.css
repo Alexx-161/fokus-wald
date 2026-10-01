@@ -74,11 +74,27 @@ hr { border: 0; border-top: 1px solid var(--track); margin: 4px 0; width: 100%; 
 .chip { background: var(--track); border-radius: 999px; padding: 6px 11px; font-size: 12.5px; font-weight: 600; }
 .chip.on { background: var(--green); color: #fff; }
 .controls { display: flex; gap: 8px; width: 100%; }
-.btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; padding: 12px 10px; font-weight: 700; font-size: 14.5px; transition: transform .12s; }
+.btn { flex: 1 1 auto; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; padding: 12px 10px; font-weight: 700; font-size: 14.5px; transition: transform .12s; }
 .btn:active { transform: scale(.96); }
 .btn.primary { background: var(--green); color: #fff; }
 .btn.soft { background: var(--track); }
 .btn.danger { color: #D85C5C; }
+.tags { display: flex; align-items: center; gap: 6px; max-width: 100%; overflow-x: auto; scrollbar-width: none; padding: 1px 0; }
+.tags::-webkit-scrollbar { display: none; }
+.tags.wrap { flex-wrap: wrap; overflow: visible; }
+.tags .chip { white-space: nowrap; flex: none; display: inline-flex; align-items: center; gap: 4px; }
+.tag-ic { color: var(--muted); display: flex; flex: none; }
+.presets .chip { display: inline-flex; align-items: center; gap: 5px; }
+.golden-hint { margin: -4px 0 0; font-size: 11.5px; font-weight: 600; color: var(--muted); text-align: center; display: flex; align-items: center; gap: 5px; }
+.golden-hint.on { color: #D99A1E; }
+.note { width: 100%; font: inherit; font-size: 13px; color: inherit; background: var(--track); border: 0; border-radius: 999px; padding: 9px 14px; outline: none; user-select: text; -webkit-user-select: text; }
+.note::placeholder { color: var(--muted); }
+.note:focus { box-shadow: 0 0 0 2px var(--green); }
+.detail .note { border-radius: 10px; padding: 6px 10px; font-size: 12.5px; }
+.hint.center { text-align: center; }
+.stepper { display: flex; align-items: center; gap: 8px; width: 100%; }
+.stepper > span { flex: 1; }
+.stepper b { display: block; font-size: 13px; }
 
 .settings { width: 100%; background: var(--card); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; align-items: flex-start; }
 .swatches { display: flex; gap: 7px; }
@@ -130,6 +146,24 @@ hr { border: 0; border-top: 1px solid var(--track); margin: 4px 0; width: 100%; 
 .pair { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .mini-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 .mini-row canvas { width: 52px; height: 52px; flex: none; }
+.meter { height: 8px; border-radius: 9px; background: var(--track); overflow: hidden; margin: 10px 0 8px; }
+.meter i { display: block; height: 100%; border-radius: 9px; background: var(--green); }
+.meter i.gold { background: #F2B93B; }
+.goal-value { min-width: 64px; text-align: center; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.block .row .iconbtn { width: 26px; height: 26px; }
+.block .row .iconbtn:disabled { opacity: .35; }
+.tagrow { display: flex; align-items: center; gap: 10px; margin-top: 9px; font-size: 12.5px; font-weight: 600; }
+.tagrow > span { width: 88px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: none; }
+.tagrow i { flex: 1; height: 8px; display: block; }
+.tagrow i b { display: block; height: 100%; border-radius: 9px; }
+.tagrow small { width: 70px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+.residents { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); margin-top: 10px; }
+.resident { display: flex; align-items: center; gap: 10px; }
+.resident canvas { width: 44px; height: 44px; border-radius: 50%; background: color-mix(in srgb, #A7DB9B 50%, transparent); flex: none; }
+.resident canvas.night { background: #262B52; }
+.resident.away canvas { filter: grayscale(1); opacity: .45; }
+.resident b { font-size: 13px; }
+.resident small.here { color: var(--green); }
 .capacity { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .capacity i { width: 90px; height: 5px; border-radius: 9px; background: var(--track); display: block; overflow: hidden; }
 .capacity i b { display: block; height: 100%; background: var(--green); border-radius: 9px; }
@@ -143,7 +177,15 @@ hr { border: 0; border-top: 1px solid var(--track); margin: 4px 0; width: 100%; 
 .island-wrap { position: relative; height: 100%; border-radius: 22px; overflow: hidden; }
 .island-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
 .island-header, .toolbar, .hint-pill { background: color-mix(in srgb, var(--card) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-.island-header { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 999px; white-space: nowrap; }
+.island-top { position: absolute; top: 12px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 8px; pointer-events: none; }
+.island-top > * { pointer-events: auto; }
+.island-header { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 999px; white-space: nowrap; }
+.detail { display: flex; gap: 12px; align-items: flex-start; width: min(340px, 100%); padding: 12px; border-radius: 20px; background: color-mix(in srgb, var(--card) 90%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 8px 24px -12px rgba(0,0,0,.3); }
+.detail-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; font-size: 14px; }
+.detail .iconbtn { width: 22px; height: 22px; }
+.plant-bubble.small { width: 58px; height: 58px; flex: none; }
+.badge.gold { background: #D99A1E; }
+.tagline { font-size: 11.5px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
 .island-title { text-align: center; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .badge { background: var(--pink); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 2px 7px; margin-left: 6px; display: inline-flex; gap: 4px; align-items: center; }
 .island-tools { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; padding: 0 8px; }

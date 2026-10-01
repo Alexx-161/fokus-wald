@@ -9,7 +9,7 @@ struct CatalogView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("Wähle, was in deiner nächsten Session wachsen soll. Mit jeder Session schaltest du neue Pflanzen frei.")
+                Text("Wähle, was in deiner nächsten Session wachsen soll. Mit jeder Session schaltest du neue Pflanzen frei – Saison-Pflanzen gibt es nur in ihrem Monat, und ab \(PlantSpecies.goldenMinutes) Minuten wächst eine goldene Variante.")
                     .font(.system(size: 13, design: .rounded))
                     .foregroundStyle(Theme.muted)
 
@@ -28,6 +28,7 @@ struct CatalogView: View {
                                             unlocked: garden.isUnlocked(species),
                                             missing: species.unlockAt - garden.plants.count,
                                             planted: garden.count(of: species),
+                                            golden: garden.goldenCount(of: species),
                                             selected: garden.selection == species.id) {
                                     garden.selection = species.id
                                 }
@@ -49,8 +50,18 @@ private struct SpeciesCard: View {
     let unlocked: Bool
     let missing: Int
     let planted: Int
+    let golden: Int
     let selected: Bool
     let onSelect: () -> Void
+
+    private var footnote: String {
+        let season = species.monthName.map { unlocked ? "nur im \($0)" : "wieder im \($0)" }
+        if !unlocked { return season ?? (missing == 1 ? "noch 1 Session" : "noch \(missing) Sessions") }
+        var parts = planted > 0 ? ["\(planted)× gepflanzt"] : [season ?? "noch nie gepflanzt"]
+        if planted > 0, let season { parts.insert(season, at: 0) }
+        if golden > 0 { parts.append("\(golden)× Gold") }
+        return parts.joined(separator: " · ")
+    }
 
     var body: some View {
         Button(action: onSelect) {
@@ -71,16 +82,16 @@ private struct SpeciesCard: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(2, reservesSpace: true)
                 Group {
-                    if !unlocked {
-                        Label(missing == 1 ? "noch 1 Session" : "noch \(missing) Sessions", systemImage: "lock.fill")
-                    } else if planted > 0 {
-                        Text("\(planted)× gepflanzt")
+                    if unlocked {
+                        Text(footnote)
                     } else {
-                        Text("noch nie gepflanzt")
+                        Label(footnote, systemImage: species.month == nil ? "lock.fill" : "calendar")
                     }
                 }
                 .font(.system(size: 11, weight: .medium, design: .rounded))
                 .foregroundStyle(selected ? species.deep : Theme.muted)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             }
             .padding(12)
             .frame(maxWidth: .infinity)
@@ -146,7 +157,7 @@ struct SpeciesPickerList: View {
                         let unlocked = garden.isUnlocked(s)
                         row(icon: AnyView(PlantIcon(species: s).saturation(unlocked ? 1 : 0).opacity(unlocked ? 1 : 0.4)),
                             title: s.name,
-                            detail: unlocked ? nil : "ab \(s.unlockAt) Sessions",
+                            detail: unlocked ? nil : s.monthName.map { "im \($0)" } ?? "ab \(s.unlockAt) Sessions",
                             selected: garden.selection == s.id, enabled: unlocked) {
                             garden.selection = s.id
                         }
@@ -204,8 +215,11 @@ struct StatsView: View {
                     StatTile(value: TimeFormat.duration(minutes: garden.totalMinutes), label: "Fokuszeit", symbol: "clock.fill")
                     StatTile(value: "\(garden.todayCount)", label: "heute", symbol: "sun.max.fill")
                     StatTile(value: "\(garden.streak) \(garden.streak == 1 ? "Tag" : "Tage")", label: "Serie", symbol: "flame.fill")
+                    StatTile(value: "\(garden.plants.filter(\.isGolden).count)", label: "goldene Pflanzen", symbol: "sparkles")
                     StatTile(value: "\(garden.currentIsland)", label: "Inseln vollendet", symbol: "flag.fill")
                 }
+
+                card { goalCard }
 
                 card {
                     VStack(alignment: .leading, spacing: 12) {
@@ -213,6 +227,8 @@ struct StatsView: View {
                         weekChart
                     }
                 }
+
+                card { tagCard }
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 12, alignment: .top)], spacing: 12) {
                     card {
@@ -249,10 +265,111 @@ struct StatsView: View {
                         }
                     }
                 }
+
+                card { residentCard }
             }
             .padding(4)
         }
         .scrollIndicators(.hidden)
+    }
+
+    private var goalCard: some View {
+        let goal = garden.weeklyGoal, week = garden.weekMinutes
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Label("Wochenziel", systemImage: "light.beacon.max.fill")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                Spacer()
+                Button { garden.weeklyGoal = max(0, goal - 30) } label: { Image(systemName: "minus") }
+                    .buttonStyle(RoundIconButtonStyle(size: 24))
+                    .disabled(goal == 0)
+                    .accessibilityLabel("Wochenziel verringern")
+                Text(goal == 0 ? "aus" : TimeFormat.duration(minutes: goal))
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .frame(minWidth: 64)
+                Button { garden.weeklyGoal = min(3000, goal + 30) } label: { Image(systemName: "plus") }
+                    .buttonStyle(RoundIconButtonStyle(size: 24))
+                    .accessibilityLabel("Wochenziel erhöhen")
+            }
+            if goal > 0 {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Theme.track)
+                        Capsule().fill(garden.weeklyGoalReached ? Color(hex: 0xF2B93B) : Palette.stem)
+                            .frame(width: geo.size.width * CGFloat(min(week, goal)) / CGFloat(goal))
+                    }
+                }
+                .frame(height: 8)
+                Text(garden.weeklyGoalReached
+                     ? "\(TimeFormat.duration(minutes: week)) diese Woche – geschafft! Der Leuchtturm auf deiner Insel leuchtet."
+                     : "\(TimeFormat.duration(minutes: week)) von \(TimeFormat.duration(minutes: goal)) diese Woche. Ist das Ziel erreicht, leuchtet der Leuchtturm auf deiner Insel.")
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("Setz dir ein Ziel für die Woche – dann zieht ein Leuchtturm auf deine Insel.")
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundStyle(Theme.muted)
+            }
+        }
+    }
+
+    private var tagCard: some View {
+        let rows = garden.minutesByTag
+        let top = max(1, rows.map(\.minutes).max() ?? 1)
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("Fokus nach Fach").font(.system(size: 14, weight: .semibold, design: .rounded))
+            if rows.isEmpty {
+                Text("Wähle vor einer Session ein Fach oder Projekt – hier siehst du dann, wohin deine Zeit fließt.")
+                    .font(.system(size: 12, design: .rounded)).foregroundStyle(Theme.muted)
+            }
+            ForEach(rows, id: \.tag) { row in
+                HStack(spacing: 10) {
+                    Text(row.tag ?? "Ohne Fach")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .lineLimit(1)
+                        .frame(width: 88, alignment: .leading)
+                    GeometryReader { geo in
+                        Capsule().fill(TagPalette.color(row.tag))
+                            .frame(width: max(6, geo.size.width * CGFloat(row.minutes) / CGFloat(top)))
+                    }
+                    .frame(height: 8)
+                    Text(TimeFormat.duration(minutes: row.minutes))
+                        .font(.system(size: 11, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.muted)
+                        .frame(width: 70, alignment: .trailing)
+                }
+            }
+        }
+    }
+
+    private var residentCard: some View {
+        let moved = Set(garden.residents)
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("Bewohner deiner Insel").font(.system(size: 14, weight: .semibold, design: .rounded))
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 10, alignment: .top)], alignment: .leading, spacing: 10) {
+                ForEach(Resident.allCases) { resident in
+                    let here = moved.contains(resident)
+                    HStack(spacing: 10) {
+                        ResidentIcon(resident: resident)
+                            .frame(width: 44, height: 44)
+                            .background(Circle().fill(resident == .fireflies ? Daylight.nightColor.opacity(0.8) : Palette.grass.opacity(0.5)))
+                            .clipShape(Circle())
+                            .saturation(here ? 1 : 0)
+                            .opacity(here ? 1 : 0.45)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(resident.name).font(.system(size: 13, weight: .semibold, design: .rounded))
+                            Text(here ? "eingezogen" : resident.condition)
+                                .font(.system(size: 11, design: .rounded))
+                                .foregroundStyle(here ? Palette.stem : Theme.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private var weekChart: some View {

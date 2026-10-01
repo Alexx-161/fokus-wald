@@ -45,6 +45,7 @@ struct RootView: View {
                 .id(prefs.themeID)
         }
         .onChange(of: scenePhase) { _, phase in model.sceneBecameActive(phase == .active) }
+        .onOpenURL { URLCommand.run($0, timer: model.timer) }
         .onAppear { model.sceneBecameActive(true) }
     }
 

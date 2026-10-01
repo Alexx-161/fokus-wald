@@ -88,20 +88,10 @@ final class AppModel: ObservableObject {
         let defaults = UserDefaults.standard
         showOnboarding = !defaults.bool(forKey: "onboarding.done") || defaults.bool(forKey: "onboarding.forceShow")
 
-        timer.pickSpecies = { [garden] seed in garden.pickSpecies(seed: seed) }
-        timer.refreshSpecies()
-        timer.onComplete = { [weak self] minutes, seed, speciesID, date in
-            guard let self else { return }
-            self.garden.add(minutes: minutes, seed: seed, speciesID: speciesID, date: date)
-            self.celebrate()
-        }
-        garden.$selection
-            .dropFirst()
-            .receive(on: DispatchQueue.main)
-            .sink { [timer] _ in timer.refreshSpecies() }
-            .store(in: &cancellables)
+        cancellables = SessionLink.connect(timer: timer, garden: garden) { [weak self] _ in self?.celebrate() }
+        timer.onBreakEnd = { [weak self] in self?.celebrate() }
         // @Published fires in willSet; defer so the timer already holds the new phase.
-        timer.$phase
+        timer.$phase.map { _ in () }.merge(with: timer.$breakEnd.map { _ in () })
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.sessionChanged() }
             .store(in: &cancellables)
@@ -158,11 +148,22 @@ final class AppModel: ObservableObject {
     private func scheduleEndNotification() {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: ["session-end"])
-        guard prefs.notify, timer.phase == .running, let end = timer.endDate, end.timeIntervalSinceNow > 1 else { return }
+        guard prefs.notify else { return }
         let content = UNMutableNotificationContent()
-        content.title = "\(timer.species.name) ist fertig gewachsen!"
-        content.body = "Deine Fokus-Session ist geschafft. Schau auf deiner Insel vorbei."
         content.sound = .default
+        let end: Date
+        if let breakEnd = timer.breakEnd {
+            end = breakEnd
+            content.title = "Die Gießzeit ist vorbei"
+            content.body = "Bereit für die nächste Pflanze?"
+        } else if timer.phase == .running, let sessionEnd = timer.endDate {
+            end = sessionEnd
+            content.title = "\(timer.species.name) ist fertig gewachsen!"
+            content.body = "Deine Fokus-Session ist geschafft. Schau auf deiner Insel vorbei."
+        } else {
+            return
+        }
+        guard end.timeIntervalSinceNow > 1 else { return }
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: end.timeIntervalSinceNow, repeats: false)
         center.add(UNNotificationRequest(identifier: "session-end", content: content, trigger: trigger))
     }
