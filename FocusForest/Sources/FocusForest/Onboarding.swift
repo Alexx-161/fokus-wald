@@ -1,5 +1,7 @@
-import AppKit
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 struct OnboardingView: View {
     @ObservedObject var prefs: Preferences
@@ -189,6 +191,7 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Fast geschafft!").font(.system(size: 22, weight: .bold, design: .rounded))
             VStack(alignment: .leading, spacing: 12) {
+                #if os(macOS)
                 if Self.hasNotch {
                     Toggle(isOn: $prefs.notchEnabled) {
                         option("Anzeige neben der Notch", "Kleine Pille mit Restzeit oben neben der Notch.")
@@ -197,14 +200,29 @@ struct OnboardingView: View {
                 Toggle(isOn: $prefs.pinned) {
                     option("Mini-Timer anheften", "Schwebt über allen Fenstern – auch über Apps im Vollbild.")
                 }
+                #else
+                Toggle(isOn: $prefs.liveActivity) {
+                    option("Live-Anzeige", "Zeigt deine Session in der Dynamic Island und auf dem Sperrbildschirm.")
+                }
+                Toggle(isOn: $prefs.notify) {
+                    option("Mitteilung bei Ablauf", "Meldet sich, wenn deine Pflanze fertig gewachsen ist.")
+                }
+                #endif
             }
             .toggleStyle(.switch)
+            .tint(Palette.stem)
             .padding(14)
             .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Theme.card))
 
+            #if os(macOS)
             step("leaf", "Immer griffbereit", "Das Blatt oben in der Menüleiste startet und pausiert den Timer.")
             step("arrow.up.left.and.arrow.down.right", "Mehr Platz, mehr Features",
                  "Zieh das Fenster größer oder nutze den Vollbildmodus für Insel, Katalog und Statistik.")
+            #else
+            step("lock.fill", "Leg das iPhone ruhig weg", "Der Timer läuft weiter, auch wenn die App geschlossen ist.")
+            step("map.fill", "Mehr entdecken",
+                 "Unter „Insel“ kannst du zoomen und Wege, Flüsse und Brücken malen. „Pflanzen“ zeigt alles, was du freischalten kannst.")
+            #endif
             Spacer(minLength: 0)
         }
     }
@@ -251,7 +269,9 @@ struct OnboardingView: View {
         .buttonStyle(.plain)
     }
 
+    #if os(macOS)
     private static let hasNotch = NSScreen.screens.contains { $0.auxiliaryTopLeftArea != nil }
+    #endif
 
     private static let demoPlants: [PlantRecord] = ["minze", "tulpe", "kirsche", "tanne", "sonnenblume", "fliegenpilz", "lavendel", "gaensebluemchen"]
         .enumerated().map { PlantRecord(minutes: 25, seed: 0.2 + Double($0.offset) * 0.09, speciesID: $0.element, island: 0) }
@@ -260,26 +280,4 @@ struct OnboardingView: View {
         Decoration(id: UUID(), kind: .path, island: 0,
                    points: [CGPoint(x: -3.2, y: 0.9), CGPoint(x: -1.4, y: 1.1), CGPoint(x: 0.4, y: 1.4), CGPoint(x: 2.6, y: 1.0)]),
     ]
-}
-
-/// Mini sky-and-island preview of a theme.
-struct ThemeSwatch: View {
-    let theme: AppTheme
-
-    var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width, h = geo.size.height
-            ZStack(alignment: .bottom) {
-                LinearGradient(colors: [theme.skyTop, theme.skyBottom], startPoint: .top, endPoint: .bottom)
-                Ellipse().fill(theme.earth).frame(width: w * 0.62, height: h * 0.42).offset(y: h * 0.12)
-                Ellipse().fill(theme.grass).frame(width: w * 0.68, height: h * 0.3).offset(y: -h * 0.08)
-                PlantIcon(species: PlantSpecies.find(theme.id == "sakura" ? "kirsche" : theme.id == "herbst" ? "ahorn" : theme.id == "winter" ? "tanne" : "minze"))
-                    .frame(width: h * 0.48, height: h * 0.48)
-                    .offset(y: -h * 0.17)
-            }
-            .frame(width: w, height: h)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .environment(\.colorScheme, theme.scheme ?? .light)
-    }
 }

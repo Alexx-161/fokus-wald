@@ -1,10 +1,16 @@
-import AppKit
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+typealias PlatformColor = NSColor
+#else
+import UIKit
+typealias PlatformColor = UIColor
+#endif
 
-extension NSColor {
+extension PlatformColor {
     convenience init(hex: UInt32) {
         self.init(
-            srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
+            red: CGFloat((hex >> 16) & 0xFF) / 255,
             green: CGFloat((hex >> 8) & 0xFF) / 255,
             blue: CGFloat(hex & 0xFF) / 255,
             alpha: 1
@@ -14,13 +20,21 @@ extension NSColor {
 
 extension Color {
     init(hex: UInt32) {
-        self.init(nsColor: NSColor(hex: hex))
+        self.init(.sRGB, red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255,
+                  blue: Double(hex & 0xFF) / 255, opacity: 1)
     }
 
+    /// A color that follows the system light/dark appearance.
     init(light: UInt32, dark: UInt32) {
+        #if canImport(AppKit)
         self.init(nsColor: NSColor(name: nil) { appearance in
             appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor(hex: dark) : NSColor(hex: light)
         })
+        #else
+        self.init(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark ? UIColor(hex: dark) : UIColor(hex: light)
+        })
+        #endif
     }
 }
 

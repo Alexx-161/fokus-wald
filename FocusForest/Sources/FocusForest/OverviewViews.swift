@@ -214,7 +214,7 @@ struct StatsView: View {
                     }
                 }
 
-                HStack(alignment: .top, spacing: 12) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 12, alignment: .top)], spacing: 12) {
                     card {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Lieblingspflanze").font(.system(size: 14, weight: .semibold, design: .rounded))

@@ -31,7 +31,12 @@ struct IslandView: View {
 
         var hint: String {
             switch self {
-            case .look: return "Ziehen zum Verschieben · Trackpad-Pinch zum Zoomen"
+            case .look:
+                #if os(macOS)
+                return "Ziehen zum Verschieben · Trackpad-Pinch zum Zoomen"
+                #else
+                return "Ziehen zum Verschieben · mit zwei Fingern zoomen"
+                #endif
             case .path: return "Ziehe über die Insel, um einen Weg zu zeichnen"
             case .river: return "Ziehe über die Insel, um einen Fluss zu zeichnen"
             case .bridge: return "Ziehe eine Linie – z. B. quer über einen Fluss"
