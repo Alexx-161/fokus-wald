@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fokus-Wald – der niedliche Fokus-Timer</title>
+<meta name="description" content="Konzentrier dich – und schau zu, wie dabei etwas Schönes wächst. Kostenloser Fokus-Timer für iPhone, iPad, Android, Windows und Mac.">
+<meta name="theme-color" content="#FBF7F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171815" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Fokus-Wald – der niedliche Fokus-Timer">
+<meta property="og:description" content="Während du lernst, wächst eine Pflanze – und deine Insel wird immer schöner.">
+<meta property="og:image" content="app/icons/icon-512.png">
+<link rel="icon" href="app/icons/icon-192.png">
+<link rel="apple-touch-icon" href="app/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <a class="logo" href="./"><img src="app/icons/icon-192.png" alt=""> Fokus-Wald</a>
+  <nav>
+    <a href="#so-gehts">So geht's</a>
+    <a href="#pflanzen">Pflanzen</a>
+    <a href="#themes">Themes</a>
+    <a href="#geraete">Installieren</a>
+    <a class="pill" href="app/">App öffnen</a>
+  </nav>
+</header>
+
+<main>
+
+  <section class="hero">
+    <div class="hero-text">
+      <p class="eyebrow pill-eyebrow"><i></i> Kostenlos · ohne Konto · ohne Werbung</p>
+      <h1>Konzentrier dich. Lass dabei etwas <em>Schönes</em> wachsen.</h1>
+      <p class="lead">Fokus-Wald ist ein kleiner, liebevoll gestalteter Fokus-Timer. Während du lernst oder arbeitest, wächst eine Pflanze – und jede Session macht deine schwebende Insel ein Stück schöner.</p>
+      <div class="cta">
+        <a class="btn primary" href="app/">Jetzt kostenlos starten
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn ghost" id="cta-second" href="#geraete">Auf meinem Gerät installieren</a>
+      </div>
+      <p class="fine" id="cta-note">Für iPhone, iPad, Android, Windows und Mac</p>
+      <dl class="facts">
+        <div><dt>14</dt><dd>Pflanzen zum Freischalten</dd></div>
+        <div><dt>5</dt><dd>Themes</dd></div>
+        <div><dt>0</dt><dd>Tracking &amp; Werbung</dd></div>
+      </dl>
+    </div>
+    <div class="hero-art" id="hero-art">
+      <div class="glow"></div>
+      <canvas id="demo-island" aria-label="Animierte Vorschau einer Insel mit wachsenden Pflanzen"></canvas>
+      <div class="float-chip" id="hero-chip">
+        <canvas id="chip-plant"></canvas>
+        <div><b id="chip-time">25:00</b><span id="chip-text">Kirschblüte wächst …</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scroll story: the plant grows while you scroll -->
+  <section class="story" id="so-gehts">
+    <div class="story-sticky">
+      <div class="story-text">
+        <p class="eyebrow">So funktioniert's</p>
+        <div class="story-steps">
+          <article class="story-step on" data-step="0">
+            <h2>Zeit wählen &amp; pflanzen</h2>
+            <p>Stell ein, wie lange du dich konzentrieren möchtest, und such dir aus, was wachsen soll. Ein Tipp – und der Keimling ist gesetzt.</p>
+          </article>
+          <article class="story-step" data-step="1">
+            <h2>Deine Pflanze wächst mit</h2>
+            <p>Solange du fokussiert bleibst, wächst sie Minute für Minute – vom Keimling bis zur vollen Pracht, mit Gesicht und allem.</p>
+          </article>
+          <article class="story-step" data-step="2">
+            <h2>Deine Insel füllt sich</h2>
+            <p>Jede geschaffte Session landet auf deiner Insel. Bei 30 Pflanzen ist sie vollendet – und eine neue taucht auf.</p>
+          </article>
+        </div>
+        <div class="story-dots" id="story-dots"><i class="on"></i><i></i><i></i></div>
+        <p class="scroll-hint" id="scroll-hint">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+          Scroll weiter und schau, was passiert
+        </p>
+      </div>
+      <div class="story-art">
+        <canvas id="story-canvas" aria-label="Eine Pflanze wächst beim Scrollen"></canvas>
+        <div class="story-clock" id="story-clock">25:00</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pflanzen">
+    <p class="eyebrow center reveal">Sammeln &amp; freischalten</p>
+    <h2 class="reveal">14 Pflanzen, jede mit eigenem Charakter</h2>
+    <p class="lead center reveal">Bäume, Blumen, Pilze und ein paar ganz besondere. Mit jeder Session schaltest du neue frei.</p>
+    <div class="plants" id="plants"></div>
+  </section>
+
+  <section id="themes">
+    <div class="split">
+      <div class="reveal">
+        <p class="eyebrow">Dein Stil</p>
+        <h2 class="left">Fünf Themes – von Mitternacht bis Winterinsel</h2>
+        <p class="lead">Wechsle das Aussehen der ganzen App mit einem Tipp: funkelnde Sterne, fallende Kirschblüten oder leiser Schneefall.</p>
+        <div class="theme-chips" id="theme-chips"></div>
+      </div>
+      <div class="theme-demo reveal" style="--d:.1s">
+        <canvas id="theme-island" aria-label="Insel im gewählten Theme"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="features">
+      <article class="card feature reveal">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg></span>
+        <h3>Wege, Flüsse &amp; Brücken</h3>
+        <p>Gestalte deine Insel selbst – einfach mit dem Finger oder der Maus zeichnen.</p>
+      </article>
+      <article class="card feature reveal" style="--d:.08s">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span>
+        <h3>Statistik &amp; Serien</h3>
+        <p>Fokuszeit, Wochenverlauf und deine Tages-Serie – sieh, wie viel du geschafft hast.</p>
+      </article>
+      <article class="card feature reveal" style="--d:.16s">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></span>
+        <h3>Funktioniert offline</h3>
+        <p>Einmal installiert, läuft Fokus-Wald auch ohne Internet – im Zug, in der Bibliothek, überall.</p>
+      </article>
+      <article class="card feature reveal" style="--d:.24s">
+        <span class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+        <h3>Nichts verlässt dein Gerät</h3>
+        <p>Kein Konto, keine Werbung, kein Tracking. Dein Fortschritt bleibt bei dir.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="geraete">
+    <p class="eyebrow center reveal">Installieren</p>
+    <h2 class="reveal">Für jedes Gerät</h2>
+    <p class="lead center reveal">Einmal öffnen, auf Wunsch wie eine echte App installieren – in unter einer Minute.</p>
+    <div class="devices">
+      <article class="card device reveal" data-device="ios">
+        <span class="yours">Dein Gerät</span>
+        <h3>iPhone &amp; iPad</h3>
+        <ol>
+          <li>Diese Seite in <b>Safari</b> öffnen und auf „App öffnen“ tippen.</li>
+          <li>Unten auf das <b>Teilen-Symbol</b> tippen (Quadrat mit Pfeil).</li>
+          <li><b>„Zum Home-Bildschirm“</b> wählen – fertig.</li>
+        </ol>
+        <a class="btn primary small" href="app/">App öffnen</a>
+        <p class="fine">Eine echte iPhone-App mit Anzeige in der Dynamic Island ist in Arbeit.</p>
+      </article>
+      <article class="card device reveal" style="--d:.08s" data-device="android">
+        <span class="yours">Dein Gerät</span>
+        <h3>Android</h3>
+        <ol>
+          <li>Diese Seite in <b>Chrome</b> öffnen und auf „App öffnen“ tippen.</li>
+          <li>Oben rechts auf <b>⋮</b> tippen.</li>
+          <li><b>„App installieren“</b> wählen – fertig.</li>
+        </ol>
+        <a class="btn primary small" href="app/">App öffnen</a>
+      </article>
+      <article class="card device reveal" style="--d:.16s" data-device="windows">
+        <span class="yours">Dein Gerät</span>
+        <h3>Windows</h3>
+        <ol>
+          <li>Diese Seite in <b>Edge</b> oder <b>Chrome</b> öffnen und auf „App öffnen“ klicken.</li>
+          <li>Rechts in der Adressleiste auf das <b>Installieren-Symbol</b> klicken.</li>
+          <li>Fokus-Wald liegt danach im Startmenü.</li>
+        </ol>
+        <a class="btn primary small" href="app/">App öffnen</a>
+      </article>
+      <article class="card device reveal" style="--d:.24s" data-device="mac">
+        <span class="yours">Dein Gerät</span>
+        <h3>Mac</h3>
+        <p>Für den Mac gibt es eine <b>eigene App</b> – mit Anzeige neben der Notch, Mini-Timer über Vollbild-Apps und Menüleisten-Symbol.</p>
+        <a class="btn primary small" href="downloads/Fokus-Wald.zip" download>Mac-App laden · 1,7 MB</a>
+        <p class="fine">Ab macOS 14 · Apple-Chip und Intel · <a href="mac.html">Schritt-für-Schritt-Anleitung</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section class="closing reveal">
+    <canvas class="stage" id="closing-stage"></canvas>
+    <h2>Bereit für deinen ersten Keimling?</h2>
+    <p class="lead center">Starte in zehn Sekunden – ohne Anmeldung.</p>
+    <a class="btn primary" href="app/">Jetzt kostenlos starten</a>
+  </section>
+</main>
+
+<footer>
+  <div class="foot">
+    <a class="logo" href="./"><img src="app/icons/icon-192.png" alt=""> Fokus-Wald</a>
+    <nav>
+      <a href="app/">Web-App</a>
+      <a href="downloads/Fokus-Wald.zip" download>Mac-App</a>
+      <a href="mac.html">Mac-Anleitung</a>
+    </nav>
+  </div>
+  <p>Ein privates Projekt, mit Liebe gebaut. Dein Fortschritt wird nur auf deinem Gerät gespeichert.</p>
+</footer>
+
+<script type="module" src="site.js"></script>
+</body>
+</html>

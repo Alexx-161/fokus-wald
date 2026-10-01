@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fokus-Wald installieren</title>
+<style>
+  :root {
+    --bg: #FBF7F0; --card: #FFFFFF; --ink: #3E3A34; --muted: #8A8276; --green: #5BAE6C;
+    --green-soft: #E3F3E3; --pink: #E07A99; --line: #EFE8DC; --warn: #FFF4E0; --warn-ink: #8A5A12;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1D1E1B; --card: #282A26; --ink: #EEE9E0; --muted: #A39E95; --green-soft: #2E3D2F; --line: #3A3C36; --warn: #3A3122; --warn-ink: #F2C98A; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 18px/1.55 ui-rounded, -apple-system, "SF Pro Rounded", system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; }
+  header { text-align: center; margin-bottom: 36px; }
+  header img { width: 128px; height: 128px; }
+  h1 { font-size: 34px; margin: 8px 0 6px; }
+  .lead { color: var(--muted); font-size: 19px; margin: 0; }
+  .time { display: inline-block; margin-top: 14px; background: var(--green-soft); color: var(--green); font-weight: 700; padding: 6px 14px; border-radius: 999px; font-size: 15px; }
+  .step { background: var(--card); border-radius: 24px; padding: 24px 26px; margin: 18px 0; box-shadow: 0 4px 18px rgba(0,0,0,.05); display: grid; grid-template-columns: 56px 1fr; gap: 18px; }
+  .num { width: 56px; height: 56px; border-radius: 50%; background: var(--green); color: #fff; font-size: 28px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .step h2 { font-size: 22px; margin: 6px 0 8px; }
+  .step p { margin: 6px 0; }
+  .key { display: inline-block; background: var(--line); border-radius: 8px; padding: 1px 9px; font-weight: 700; white-space: nowrap; }
+  .btn { display: inline-block; border-radius: 8px; padding: 1px 10px; font-weight: 700; background: #2F7DF6; color: #fff; white-space: nowrap; }
+  .no { color: #C2453D; font-weight: 700; }
+  .note { background: var(--warn); color: var(--warn-ink); border-radius: 14px; padding: 12px 16px; margin-top: 12px; font-size: 16px; }
+  .tip { background: var(--green-soft); border-radius: 14px; padding: 12px 16px; margin-top: 12px; font-size: 16px; }
+  .sketch-label { font-size: 13px; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .06em; }
+  .sketch { border: 2px dashed var(--line); border-radius: 16px; padding: 16px; display: flex; justify-content: center; }
+  .dialog { width: 280px; background: #F4F2F2; color: #222; border-radius: 18px; padding: 18px; text-align: center; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.15); }
+  .dialog .ico { width: 54px; height: 54px; margin: 0 auto 8px; }
+  .dialog b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .dialog .row { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .dialog .b { border-radius: 10px; padding: 7px; background: #E2E0E0; font-weight: 600; }
+  .dialog .b.hl { outline: 3px solid var(--pink); outline-offset: 2px; background: #fff; }
+  .dialog .b.bad { opacity: .45; }
+  .settings { width: 100%; max-width: 520px; background: #F4F2F2; color: #222; border-radius: 16px; display: grid; grid-template-columns: 150px 1fr; overflow: hidden; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+  .settings .side { background: #E9E6E6; padding: 12px 8px; }
+  .settings .side div { padding: 5px 8px; border-radius: 7px; }
+  .settings .side .on { background: #2F7DF6; color: #fff; font-weight: 600; }
+  .settings .pane { padding: 14px; }
+  .settings .pane .muted { color: #888; }
+  .settings .blk { background: #fff; border-radius: 10px; padding: 10px 12px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .settings .open { border-radius: 8px; padding: 4px 10px; background: #fff; border: 1px solid #ccc; font-weight: 600; outline: 3px solid var(--pink); outline-offset: 2px; white-space: nowrap; }
+  .finder { width: 100%; max-width: 520px; background: #F4F2F2; color: #222; border-radius: 16px; display: grid; grid-template-columns: 150px 1fr; overflow: hidden; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+  .finder .side { background: #E9E6E6; padding: 12px 8px; }
+  .finder .side div { padding: 5px 8px; border-radius: 7px; }
+  .finder .side .on { outline: 3px solid var(--pink); background: #fff; font-weight: 700; }
+  .finder .pane { padding: 18px; display: flex; align-items: center; gap: 14px; }
+  .finder .pane img { width: 64px; height: 64px; }
+  .arrow { font-size: 28px; color: var(--pink); font-weight: 800; }
+  h3 { font-size: 24px; margin: 46px 0 10px; }
+  details { background: var(--card); border-radius: 18px; padding: 16px 20px; margin: 10px 0; }
+  summary { font-weight: 700; cursor: pointer; }
+  details p { margin: 10px 0 2px; }
+  .done { text-align: center; background: var(--card); border-radius: 24px; padding: 28px; margin-top: 18px; }
+  .done img { width: 72px; }
+  footer { text-align: center; color: var(--muted); font-size: 14px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <img src="data:image/png;base64,{{ICON}}" alt="">
+  <h1>Fokus-Wald installieren</h1>
+  <p class="lead">Ein kleiner, niedlicher Fokus-Timer: Während du lernst oder arbeitest, wächst eine Pflanze – und mit jeder Session wird deine Insel schöner.</p>
+  <span class="time">Dauert ca. 3 Minuten · nur beim allerersten Mal</span>
+</header>
+
+<div class="step">
+  <div class="num">1</div>
+  <div>
+    <h2>Passt dein Mac?</h2>
+    <p>Klick ganz oben links auf das <span class="key">&#63743;</span> Apfel-Symbol und dann auf <span class="key">Über diesen Mac</span>.</p>
+    <p>Dort steht deine macOS-Version. Sie muss <b>14 (Sonoma) oder neuer</b> sein – also z.&nbsp;B. Sonoma, Sequoia oder Tahoe. Dann passt alles.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">2</div>
+  <div>
+    <h2>Die App in den Ordner „Programme“ ziehen</h2>
+    <p>Du siehst gerade diese Anleitung – daneben im selben Ordner liegt die App <b>Fokus-Wald</b> (das Bild mit dem kleinen Baum).</p>
+    <p>Öffne ein neues Finder-Fenster (im Dock das blau-weiße Gesicht ganz links) und zieh die App mit der Maus links auf <span class="key">Programme</span>.</p>
+    <div class="sketch-label">So ungefähr sieht das aus</div>
+    <div class="sketch">
+      <div class="finder">
+        <div class="side"><div>Zuletzt benutzt</div><div class="on">Programme</div><div>Schreibtisch</div><div>Downloads</div></div>
+        <div class="pane"><span class="arrow">&larr;</span><img src="data:image/png;base64,{{ICON}}" alt=""><span><b>Fokus-Wald</b><br>hierher ziehen</span></div>
+      </div>
+    </div>
+    <div class="tip">Kein ZIP mehr zu sehen, sondern direkt ein Ordner? Super – dein Mac hat ihn schon ausgepackt. Falls du nur die ZIP-Datei siehst: einfach doppelt darauf klicken.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">3</div>
+  <div>
+    <h2>Einmal öffnen – es kommt eine Warnung</h2>
+    <p>Geh in den Ordner <span class="key">Programme</span> und klick doppelt auf <b>Fokus-Wald</b>.</p>
+    <p>Jetzt erscheint eine Warnung. <b>Das ist völlig normal</b> – die App kommt von einem Freund und nicht aus dem App Store, deshalb kennt Apple sie nicht.</p>
+    <p>Klick auf <span class="btn">Fertig</span> (oder <span class="btn">OK</span>). <span class="no">Nicht</span> auf „In den Papierkorb legen“.</p>
+    <div class="sketch-label">So ungefähr sieht das aus</div>
+    <div class="sketch">
+      <div class="dialog">
+        <img class="ico" src="data:image/png;base64,{{ICON}}" alt="">
+        <b>„Fokus-Wald“ wurde nicht geöffnet</b>
+        Apple konnte nicht überprüfen, ob „Fokus-Wald“ frei von Schadsoftware ist …
+        <div class="row"><div class="b hl">Fertig</div><div class="b bad">In den Papierkorb legen</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">4</div>
+  <div>
+    <h2>In den Einstellungen erlauben</h2>
+    <p>Klick oben links auf <span class="key">&#63743;</span> und dann auf <span class="key">Systemeinstellungen</span>.</p>
+    <p>Links in der Liste auf <span class="key">Datenschutz &amp; Sicherheit</span> klicken. Dann rechts <b>ganz nach unten scrollen</b>.</p>
+    <p>Dort steht: <i>„Fokus-Wald“ wurde blockiert …</i> – klick daneben auf <span class="btn">Dennoch öffnen</span>.</p>
+    <div class="sketch-label">So ungefähr sieht das aus</div>
+    <div class="sketch">
+      <div class="settings">
+        <div class="side"><div>Allgemein</div><div>Erscheinungsbild</div><div class="on">Datenschutz &amp; Sicherheit</div><div>Bildschirmzeit</div></div>
+        <div class="pane">
+          <b>Sicherheit</b>
+          <div class="muted">(ganz unten auf der Seite)</div>
+          <div class="blk"><span>„Fokus-Wald“ wurde blockiert, um deinen Mac zu schützen.</span><span class="open">Dennoch öffnen</span></div>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:14px">Jetzt fragt der Mac noch einmal nach: wieder <span class="btn">Dennoch öffnen</span> klicken und dein <b>Mac-Passwort</b> eingeben (oder den Finger auf Touch ID legen).</p>
+    <div class="note"><b>Du findest „Dennoch öffnen“ nicht?</b> Dann hast du Schritt 3 vielleicht übersprungen. Klick einfach nochmal doppelt auf die App, schließ die Warnung mit „Fertig“ und schau dann erneut in die Einstellungen. Der Knopf erscheint nur für ungefähr eine Stunde nach dem Öffnungsversuch.</div>
+    <div class="tip"><b>Auf macOS 14 (Sonoma) geht's auch schneller:</b> Im Ordner „Programme“ mit der <b>rechten Maustaste</b> (oder <span class="key">ctrl</span> gedrückt halten und klicken) auf die App klicken &rarr; <b>Öffnen</b> &rarr; nochmal <b>Öffnen</b>.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">5</div>
+  <div>
+    <h2>Fertig – viel Spaß!</h2>
+    <p>Die App startet mit einer kurzen Begrüßung, in der du dir einen Stil und deine erste Pflanze aussuchst.</p>
+    <p>Ab jetzt öffnest du Fokus-Wald ganz normal – über den Ordner „Programme“, das Dock oder das <b>kleine Blatt</b> oben rechts in der Menüleiste. Die Warnung kommt nie wieder.</p>
+  </div>
+</div>
+
+<h3>So benutzt du Fokus-Wald</h3>
+<div class="step">
+  <div class="num" style="font-size:22px">&#9201;</div>
+  <div>
+    <p><b>Zeit wählen und auf „Pflanzen“ klicken.</b> Solange der Timer läuft, wächst deine Pflanze. Ist die Zeit um, zieht sie auf deine Insel.</p>
+    <p><b>Fenster größer ziehen</b> (oder grüner Punkt oben links = Vollbild): Dann siehst du deine Insel, alle Pflanzen, die Statistik und dein Archipel. Auf der Insel kannst du zoomen und Wege, Flüsse und Brücken malen.</p>
+    <p><b>Stecknadel oben im Timer:</b> Ein kleiner Mini-Timer schwebt dann über allen Fenstern – auch über Apps im Vollbild.</p>
+    <p><b>Regler-Symbol:</b> Hier wechselst du das Theme (Wiese, Mitternacht, Kirschblüte, Herbst, Winter).</p>
+  </div>
+</div>
+
+<h3>Häufige Fragen</h3>
+<details>
+  <summary>Ist das sicher? Warum warnt mein Mac?</summary>
+  <p>Ja. Apps, die nicht über den App Store kommen, müssen bei Apple gegen Geld angemeldet werden – sonst zeigt der Mac diese Warnung. Fokus-Wald ist ein privates Projekt unter Freunden. Die App braucht kein Internet, liest keine Daten von dir und schickt nichts irgendwohin. Deine Pflanzen bleiben nur auf deinem Mac.</p>
+</details>
+<details>
+  <summary>Die App startet gar nicht oder es kommt „nicht kompatibel“.</summary>
+  <p>Dann ist dein macOS wahrscheinlich älter als Version 14. Schau in Schritt 1 nach. Ein kostenloses Update findest du unter &#63743; &rarr; Systemeinstellungen &rarr; Allgemein &rarr; Softwareupdate – falls dein Mac es unterstützt.</p>
+</details>
+<details>
+  <summary>Ich sehe kein Fenster – nur ein Blatt oben in der Menüleiste.</summary>
+  <p>Klick auf das Blatt und dann auf „Timer öffnen“. Oder klick einfach auf das Fokus-Wald-Symbol im Dock.</p>
+</details>
+<details>
+  <summary>Oben am Bildschirmrand erscheint eine kleine schwarze Anzeige.</summary>
+  <p>Das ist die Restzeit deiner Session – praktisch, wenn das Fenster zu ist. Ausschalten kannst du sie über das Regler-Symbol im Timer &rarr; „Anzeige neben der Notch“.</p>
+</details>
+<details>
+  <summary>Wie lösche ich die App wieder?</summary>
+  <p>Im Ordner „Programme“ die App Fokus-Wald einfach in den Papierkorb ziehen. Fertig.</p>
+</details>
+
+<div class="done">
+  <img src="data:image/png;base64,{{ICON}}" alt="">
+  <p><b>Viel Spaß beim Fokussieren – und beim Wachsen-Lassen!</b></p>
+</div>
+
+<footer>Fokus-Wald · Version 1.0</footer>
+</main>
+</body>
+</html>

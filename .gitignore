@@ -1,0 +1,13 @@
+# Build output
+.build/
+.build-share/
+FocusForest/build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# macOS
+.DS_Store
+
+# Local tooling
+.claude/
