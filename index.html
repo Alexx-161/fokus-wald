@@ -20,6 +20,7 @@
   <a class="logo" href="./"><img src="app/icons/icon-192.png" alt=""> Fokus-Wald</a>
   <nav>
     <a href="#so-gehts">So geht's</a>
+    <a href="#anders">Was anders ist</a>
     <a href="#pflanzen">Pflanzen</a>
     <a href="#themes">Themes</a>
     <a href="#geraete">Installieren</a>
@@ -42,7 +43,7 @@
       </div>
       <p class="fine" id="cta-note">Für iPhone, iPad, Android, Windows und Mac</p>
       <dl class="facts">
-        <div><dt>14</dt><dd>Pflanzen zum Freischalten</dd></div>
+        <div><dt>26</dt><dd>Pflanzen, 12 davon nur zur Saison</dd></div>
         <div><dt>5</dt><dd>Themes</dd></div>
         <div><dt>0</dt><dd>Tracking &amp; Werbung</dd></div>
       </dl>
@@ -73,7 +74,7 @@
           </article>
           <article class="story-step" data-step="2">
             <h2>Deine Insel füllt sich</h2>
-            <p>Jede geschaffte Session landet auf deiner Insel. Bei 30 Pflanzen ist sie vollendet – und eine neue taucht auf.</p>
+            <p>Jede geschaffte Session landet auf deiner Insel. Bei 30 Pflanzen ist sie vollendet – und eine neue taucht auf. Und wenn du mal früher aufhörst: Der Setzling wartet auf dich.</p>
           </article>
         </div>
         <div class="story-dots" id="story-dots"><i class="on"></i><i></i><i></i></div>
@@ -89,10 +90,52 @@
     </div>
   </section>
 
+  <section id="anders">
+    <p class="eyebrow center reveal">Was Fokus-Wald anders macht</p>
+    <h2 class="reveal">Sanft statt streng</h2>
+    <p class="lead center reveal">Andere Fokus-Apps lassen deinen Baum eingehen, wenn du abbrichst. Hier nicht.</p>
+    <div class="pillars">
+      <article class="card pillar reveal">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.500-7-10a4 4 0 0 1 7-2.500A4 4 0 0 1 19 10c0 5.500-7 10-7 10z"/></svg></span>
+        <h3>Hier stirbt keine Pflanze</h3>
+        <p>Hörst du früher auf, bleibt deine Pflanze als Setzling im Beet stehen. In der nächsten Session wächst sie einfach weiter – jede fokussierte Minute zählt.</p>
+      </article>
+      <article class="card pillar reveal" style="--d:.08s">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.500" cy="8.500" r="1.200"/></svg></span>
+        <h3>Deine Insel ist dein Tagebuch</h3>
+        <p>Ordne Sessions einem Fach oder Projekt zu und schreib eine Notiz dazu. Tippst du später eine Pflanze an, weißt du wieder: 45 Minuten Mathe, am 3. Oktober.</p>
+      </article>
+      <article class="card pillar reveal" style="--d:.16s">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M11 3l1.800 5.200L18 10l-5.200 1.800L11 17l-1.800-5.200L4 10l5.200-1.800z"/></svg></span>
+        <h3>Lange Sessions werden golden</h3>
+        <p>Ab 50 Minuten am Stück wächst eine seltene goldene Variante. Zwölf Saison-Pflanzen gibt es nur in ihrem Monat – das Christbäumchen zum Beispiel nur im Dezember.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="lebendig">
+    <div class="split">
+      <div class="theme-demo living-demo reveal">
+        <canvas id="living-island" aria-label="Insel mit Leuchtturm und Tieren im Wechsel von Tag und Nacht"></canvas>
+        <span class="living-clock" id="living-clock">12:00 Uhr</span>
+      </div>
+      <div class="reveal" style="--d:.1s">
+        <p class="eyebrow">Lebendige Insel</p>
+        <h2 class="left">Ein Ort, an den man gern zurückkommt</h2>
+        <p class="lead">Der Himmel über deiner Insel folgt der echten Uhrzeit, das Wetter der Jahreszeit – und mit der Zeit zieht Leben ein.</p>
+        <ul class="checks">
+          <li><b>Bewohner:</b> Schmetterlinge ab 3 Pflanzen, ein Vogel ab 10, der Hase mit der ersten vollendeten Insel, der Fuchs nach 7 Tagen in Folge – und nachts Glühwürmchen.</li>
+          <li><b>Leuchtturm:</b> Setz dir ein Wochenziel. Ist es geschafft, leuchtet er über deiner Insel.</li>
+          <li><b>Gießzeit:</b> Nach jeder Session wartet eine kurze Pause mit eigenem Timer – Zeit, Wege und Flüsse zu malen.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <section id="pflanzen">
     <p class="eyebrow center reveal">Sammeln &amp; freischalten</p>
-    <h2 class="reveal">14 Pflanzen, jede mit eigenem Charakter</h2>
-    <p class="lead center reveal">Bäume, Blumen, Pilze und ein paar ganz besondere. Mit jeder Session schaltest du neue frei.</p>
+    <h2 class="reveal">26 Pflanzen, jede mit eigenem Charakter</h2>
+    <p class="lead center reveal">Bäume, Blumen, Pilze und ein paar ganz besondere. Mit jeder Session schaltest du neue frei – und jeden Monat wartet eine Saison-Pflanze.</p>
     <div class="plants" id="plants"></div>
   </section>
 
@@ -119,8 +162,13 @@
       </article>
       <article class="card feature reveal" style="--d:.08s">
         <span class="ic"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span>
-        <h3>Statistik &amp; Serien</h3>
-        <p>Fokuszeit, Wochenverlauf und deine Tages-Serie – sieh, wie viel du geschafft hast.</p>
+        <h3>Statistik nach Fach</h3>
+        <p>Fokuszeit, Wochenverlauf, Tages-Serie und Wochenziel – und wohin deine Zeit geflossen ist.</p>
+      </article>
+      <article class="card feature reveal" style="--d:.12s">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M7 11H5v10h14V11h-2"/></svg></span>
+        <h3>Insel als Bild teilen</h3>
+        <p>Speichere deine Insel als Bild – als Hintergrund, fürs Poster oder zum Verschicken.</p>
       </article>
       <article class="card feature reveal" style="--d:.16s">
         <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></span>
@@ -131,6 +179,11 @@
         <span class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
         <h3>Nichts verlässt dein Gerät</h3>
         <p>Kein Konto, keine Werbung, kein Tracking. Dein Fortschritt bleibt bei dir.</p>
+      </article>
+      <article class="card feature reveal" style="--d:.32s">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h11M11 3l4 4-4 4M20 17H9M13 13l-4 4 4 4"/></svg></span>
+        <h3>Umziehen zwischen Geräten</h3>
+        <p>Sichere deinen Fortschritt als Datei und lade ihn in der Web-App, auf dem Mac oder dem iPhone wieder.</p>
       </article>
     </div>
   </section>
@@ -174,8 +227,8 @@
       <article class="card device reveal" style="--d:.24s" data-device="mac">
         <span class="yours">Dein Gerät</span>
         <h3>Mac</h3>
-        <p>Für den Mac gibt es eine <b>eigene App</b> – mit Anzeige neben der Notch, Mini-Timer über Vollbild-Apps und Menüleisten-Symbol.</p>
-        <a class="btn primary small" href="downloads/Fokus-Wald.zip" download>Mac-App laden · 1,7 MB</a>
+        <p>Für den Mac gibt es eine <b>eigene App</b> – mit Anzeige neben der Notch, Mini-Timer über Vollbild-Apps, Menüleisten-Symbol, Tastenkürzel <b>⌃⌥F</b> und Anbindung an die Kurzbefehle-App.</p>
+        <a class="btn primary small" href="downloads/Fokus-Wald.zip" download>Mac-App laden · 2,2 MB</a>
         <p class="fine">Ab macOS 14 · Apple-Chip und Intel · <a href="mac.html">Schritt-für-Schritt-Anleitung</a></p>
       </article>
     </div>

@@ -8,6 +8,7 @@ const BLOBS = [
   [-0.36, -0.42, 0.64], [0.37, -0.40, 0.60], [0, -0.62, 0.55],
 ];
 const RAINBOW = ['#F7A8B8', '#FFC98B', '#FFE89A', '#A8E6A1', '#A8D2F5', '#C9B6F2'];
+const BAUBLES = ['#E8645A', '#FFD66B', '#8CCBEF'];
 
 export function circle(ctx, x, y, r, fill) {
   if (r <= 0) return;
@@ -57,7 +58,7 @@ function withAlpha(ctx, alpha, draw) {
   ctx.restore();
 }
 
-export function drawPlant(ctx, s, base, u, p, seed, time, { ground = true, detail = true } = {}) {
+export function drawPlant(ctx, s, base, u, p, seed, time, { ground = true, detail = true, golden = false } = {}) {
   const g = smooth(0, 1, p);
   ctx.save();
   ctx.translate(base.x, base.y);
@@ -81,7 +82,31 @@ export function drawPlant(ctx, s, base, u, p, seed, time, { ground = true, detai
       face = drawTree(ctx, s, u, g, p, seed, time, detail);
   }
   if (detail && face) drawFace(ctx, face.x, face.y, face.r, p, seed, time);
+  if (golden && face) drawGolden(ctx, face.x, face.y, face.r, p, seed, time);
   ctx.restore();
+}
+
+/** The rare variant grown by long sessions: a warm glow and twinkling golden stars around the crown. */
+function drawGolden(ctx, cx, cy, R, p, seed, time) {
+  const a = smooth(0.8, 1.0, p);
+  if (a <= 0.01) return;
+  const glowR = R * 2.1;
+  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+  glow.addColorStop(0, rgba(P.star, 0.3 * a));
+  glow.addColorStop(1, rgba(P.star, 0));
+  circle(ctx, cx, cy, glowR, glow);
+  for (let i = 0; i < 5; i++) {
+    const ang = (i * TAU) / 5 + seed * 6 - Math.PI / 2;
+    const rr = R * (1.15 + 0.3 * rnd(seed, 70 + i));
+    const twinkle = time === 0 ? 1 : 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(time * 2.2 + i * 1.9));
+    const x = cx + Math.cos(ang) * rr, y = cy + Math.sin(ang) * rr * 0.85;
+    withAlpha(ctx, a * twinkle, () => {
+      starPath(ctx, x, y, R * 0.16);
+      ctx.fillStyle = P.star;
+      ctx.fill();
+      circle(ctx, x, y, R * 0.04, '#fff');
+    });
+  }
 }
 
 // ---- Trees
@@ -97,7 +122,7 @@ function drawTree(ctx, s, u, g, p, seed, time, detail) {
 
   if (smooth(0.18, 1, p) <= 0.001) return null;
   let crown;
-  if (s.kind === 'pine') crown = drawPine(ctx, s, u, trunkH, p);
+  if (s.kind === 'pine' || s.kind === 'festive') crown = drawPine(ctx, s, u, trunkH, p);
   else if (s.kind === 'crystal') crown = drawCrystal(ctx, s, u, trunkH, p, seed, time);
   else if (s.kind === 'rainbow') {
     crown = drawRound(ctx, u, trunkH, p, seed, (i) => {
@@ -172,6 +197,11 @@ function drawPine(ctx, s, u, trunkH, p) {
     tri(w, h, baseY, u * 0.018, s.shade);
     tri(w, h, baseY, 0, s.main);
     circle(ctx, -w * 0.14, baseY - h * 0.55, u * 0.016 * a, s.light);
+    if (s.kind === 'festive') {
+      [-0.24, 0.05, 0.27].forEach((dx, j) => {
+        if (k < 2 || j !== 1) circle(ctx, w * dx, baseY - h * (0.12 + 0.12 * (j % 2)), u * 0.022 * a, BAUBLES[(j + k) % BAUBLES.length]);
+      });
+    }
     if (k === 0) face = { x: 0, y: baseY - h * 0.3 };
     apexY = baseY - h;
   }

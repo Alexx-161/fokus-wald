@@ -87,6 +87,7 @@ function drawHero(t) {
   const vp = viewport(f.w, f.h, shape, 1.08, { x: 0, y: 4 }, reducedMotion ? 0 : Math.sin(t * 0.7) * 5);
   drawIsland(f.ctx, f.w, f.h, vp, shape, {
     plants, growing: { species, seed: demoPlant(planted).seed, progress }, decorations: DECORATIONS, time: t, theme, sky: false,
+    scene: { residents: ['butterfly', 'bird', 'bunny', 'fox'] },
   });
 
   const chip = fit($('#chip-plant'));
@@ -231,6 +232,29 @@ function drawThemeIsland(t) {
   });
 }
 
+// ---- Living island: a whole day in twenty seconds, with residents, lighthouse and a sapling in the seedbed
+
+const LIVING_SCENE = {
+  residents: ['butterfly', 'bird', 'bunny', 'fox', 'fireflies'], lighthouse: 'lit', month: new Date().getMonth() + 1,
+  saplings: [{ speciesID: 'kirsche', seed: 0.4, progress: 0.42 }],
+};
+
+function drawLiving(t) {
+  const canvas = $('#living-island');
+  if (!onScreen(canvas)) return;
+  const f = fit(canvas);
+  if (!f) return;
+  const hour = reducedMotion ? 17.5 : (t * 1.2 + 9) % 24;
+  const plants = Array.from({ length: 12 }, (_, i) => ({ ...demoPlant(i), minutes: i % 4 === 1 ? 60 : 25 }));
+  const shape = islandShape(ORDER.length);
+  // The light Wiese theme, so the change from day to night shows even when the system is in dark mode.
+  drawIsland(f.ctx, f.w, f.h, viewport(f.w, f.h, shape, 1.22, { x: 0, y: 14 }, Math.sin(t * 0.7) * 4), shape, {
+    plants, decorations: DECORATIONS, time: t, theme: resolveTheme('wiese', true), scene: { ...LIVING_SCENE, hour },
+  });
+  const minutes = Math.floor((hour % 1) * 6) * 10;
+  $('#living-clock').textContent = `${String(Math.floor(hour)).padStart(2, '0')}:${String(minutes).padStart(2, '0')} Uhr`;
+}
+
 // ---- Closing stage
 
 function drawClosing(t) {
@@ -259,7 +283,7 @@ function setupReveal() {
     }
   }, { threshold: 0.15, rootMargin: '0px 0px -6% 0px' });
   document.querySelectorAll('.reveal').forEach((el, i) => {
-    if (el.classList.contains('plant')) el.style.setProperty('--d', `${(i % 14) * 0.04}s`);
+    if (el.classList.contains('plant')) el.style.setProperty('--d', `${(i % 13) * 0.04}s`);
     observer.observe(el);
   });
 }
@@ -310,6 +334,7 @@ function loop() {
   const t = now();
   drawHero(t);
   drawStory(t);
+  drawLiving(t);
   drawPlantGrid(t);
   drawThemeIsland(t);
   drawClosing(t);

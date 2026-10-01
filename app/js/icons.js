@@ -40,6 +40,13 @@ const PATHS = {
   download: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
   upload: '<path d="M12 16V5M7 9l5-5 5 5M5 20h14"/>',
   share: '<path d="M12 15V3M8 7l4-4 4 4M7 11H5v10h14V11h-2"/>',
+  tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3" fill="currentColor"/>',
+  drop: '<path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/>',
+  brush: '<path d="M14 4l6 6-8 8H6v-6z"/><path d="M4 21c2 0 3-1 3-3"/>',
+  paw: '<circle cx="6" cy="11" r="1.8"/><circle cx="10" cy="6.5" r="1.8"/><circle cx="15" cy="6.5" r="1.8"/><circle cx="18.5" cy="11" r="1.8"/><path d="M8 17c0-2.500 2-4.500 4.500-4.500S17 14.500 17 17c0 1.500-1.200 2.500-2.500 2.200-1.300-.3-2.700-.3-4 0C9.200 19.500 8 18.500 8 17z"/>',
+  beacon: '<path d="M9 21l1.500-11h3L15 21zM10 10V7h4v3M9 7l3-3 3 3M3 6l3 1M21 6l-3 1M3 11l3-1M21 11l-3-1M7 21h10"/>',
+  calendar: '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8 3v4M16 3v4"/>',
+  heart: '<path d="M12 20s-7-4.500-7-10a4 4 0 0 1 7-2.500A4 4 0 0 1 19 10c0 5.500-7 10-7 10z"/>',
 };
 
 export function icon(name, size = 20) {

@@ -1,8 +1,9 @@
 // Canvas port of the Mac app's island. Plants sit on a sunflower spiral, so the island grows outward
 // from the middle and earlier plants never move when new ones are added.
 
-import { TAU, clamp, rnd, rgba, findSpecies, PALETTE as P } from './data.js';
+import { TAU, clamp, rnd, rgba, findSpecies, isGolden, PALETTE as P } from './data.js';
 import { drawPlant, circle, starPath, roundRect } from './painter.js';
+import { daylight, drawSkyMood, drawSunAndMoon, drawNightVeil, groundItems, drawAir, drawLights } from './living.js';
 
 export function islandShape(count) {
   const rx = 0.85 * Math.sqrt(Math.max(count, 1)) + 1.1;
@@ -37,17 +38,44 @@ export function viewport(width, height, shape, zoom = 1, pan = { x: 0, y: 0 }, b
   };
 }
 
+const sizeFactor = (minutes, species) => clamp(0.75 + minutes / 100, 0.8, 1.35) * species.islandScale;
+
+/** The plant under a point in island world coordinates; the one furthest to the front wins. */
+export function plantAt(point, plants) {
+  let best = null, bestY = -Infinity;
+  plants.forEach((plant, index) => {
+    const pos = plantPosition(index);
+    const size = sizeFactor(plant.minutes, findSpecies(plant.speciesID));
+    const h = 0.95 * size;
+    const dx = (point.x - pos.x) / (0.42 * size), dy = (point.y - (pos.y - h * 0.5)) / (h * 0.62);
+    if (dx * dx + dy * dy <= 1 && pos.y > bestY) {
+      best = plant;
+      bestY = pos.y;
+    }
+  });
+  return best;
+}
+
+/**
+ * `scene` is everything beyond plants and decorations:
+ * { hour, month, residents: [ids], lighthouse: 'none' | 'dark' | 'lit', saplings: [...] } – all optional.
+ * `sky: false` leaves the background transparent so the island can float on a page.
+ */
 export function drawIsland(ctx, width, height, vp, shape, opts) {
-  // `sky: false` leaves the background transparent so the island can float on a page.
-  const { plants = [], growing = null, decorations = [], draft = null, complete = false, time = 0, theme, sky = true } = opts;
+  const { plants = [], growing = null, decorations = [], draft = null, complete = false, time = 0, theme, sky = true, scene = {} } = opts;
+  // Dark skies already are night, so the time of day only tints light ones.
+  const light = daylight(sky && !theme.dark && scene.hour !== undefined ? scene.hour : null);
   if (sky) {
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
     gradient.addColorStop(0, theme.skyTop);
     gradient.addColorStop(1, theme.skyBottom);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
-    if (theme.particles === 'stars') drawStars(ctx, width, height, time);
-    drawClouds(ctx, width, height, time, theme);
+    drawSkyMood(ctx, width, height, light);
+    if (theme.particles === 'stars') drawStars(ctx, width, height, time, 1);
+    else if (light.night > 0.05) drawStars(ctx, width, height, time, light.night);
+    drawSunAndMoon(ctx, width, height, light);
+    drawClouds(ctx, width, height, time, theme, 0.85 * (1 - 0.55 * light.night));
   }
 
   const s = vp.scale;
@@ -102,22 +130,39 @@ export function drawIsland(ctx, width, height, vp, shape, opts) {
   ctx.restore();
   for (const d of all) if (d.kind === 'bridge') drawBridge(ctx, d, vp);
 
-  const items = plants.map((p, i) => ({ pos: plantPosition(i), species: findSpecies(p.speciesID), seed: p.seed, minutes: p.minutes, progress: 1 }));
-  if (growing) {
-    items.push({ pos: plantPosition(plants.length), species: growing.species, seed: growing.seed, minutes: 25, progress: growing.progress });
-  }
-  items.sort((p, q) => p.pos.y - q.pos.y);
-  for (const item of items) {
-    const sizeFactor = clamp(0.75 + item.minutes / 100, 0.8, 1.35) * item.species.islandScale;
-    const depthFactor = 0.92 + 0.1 * (item.pos.y / ry);
-    const unit = 1.55 * sizeFactor * depthFactor * s;
-    ell(item.pos.x, item.pos.y, 0.3 * sizeFactor, 0.08, rgba(theme.grassDark, 0.7));
-    drawPlant(ctx, item.species, vp.view(item.pos), unit, item.progress, item.seed, time, { ground: false, detail: unit > 40 });
-  }
+  // Everything standing on the grass is drawn back to front.
+  const items = [];
+  const addPlant = (pos, species, seed, minutes, progress) => {
+    const factor = sizeFactor(minutes, species);
+    const unit = 1.55 * factor * (0.92 + 0.1 * (pos.y / ry)) * s;
+    items.push({
+      y: pos.y,
+      draw: () => {
+        ell(pos.x, pos.y, 0.3 * factor, 0.08, rgba(theme.grassDark, 0.7));
+        drawPlant(ctx, species, vp.view(pos), unit, progress, seed, time, { ground: false, detail: unit > 40, golden: isGolden(minutes) });
+      },
+    });
+  };
+  plants.forEach((p, i) => addPlant(plantPosition(i), findSpecies(p.speciesID), p.seed, p.minutes, 1));
+  if (growing) addPlant(plantPosition(plants.length), growing.species, growing.seed, growing.minutes || 25, growing.progress);
+  items.push(...groundItems(scene, vp, shape, time, light.night, theme));
+  items.sort((p, q) => p.y - q.y);
+  for (const item of items) item.draw(ctx);
 
   if (complete) drawFlag(ctx, pt(rx * 0.78, -ry * 0.18), s, time);
-  if (sky && theme.particles === 'snow') drawFalling(ctx, width, height, time, false);
-  if (sky && theme.particles === 'petals') drawFalling(ctx, width, height, time, true);
+  drawAir(ctx, scene, vp, shape, time, light.night);
+  drawNightVeil(ctx, width, height, light);
+  drawLights(ctx, scene, vp, shape, time, light.night);
+  if (!sky) return;
+  if (theme.particles === 'snow') drawFalling(ctx, width, height, time, 'snow', 55);
+  else if (theme.particles === 'petals') drawFalling(ctx, width, height, time, 'petals', 26);
+  else if (theme.particles === 'none' && scene.month) {
+    // Themes without weather of their own show a light version of the real season.
+    const m = scene.month;
+    if (m >= 3 && m <= 5) drawFalling(ctx, width, height, time, 'petals', 9);
+    else if (m >= 9 && m <= 11) drawFalling(ctx, width, height, time, 'leaves', 12);
+    else if (m === 12 || m <= 2) drawFalling(ctx, width, height, time, 'snow', 22);
+  }
 }
 
 // ---- Decorations
@@ -204,10 +249,10 @@ function drawFlag(ctx, p, s, time) {
 
 // ---- Sky
 
-function drawClouds(ctx, width, height, time, theme) {
+function drawClouds(ctx, width, height, time, theme, opacity) {
   const clouds = [[0.12, 6, 1.0, 0.1], [0.24, 4, 0.7, 0.55], [0.08, 3, 0.55, 0.8], [0.32, 5, 0.85, 0.3]];
   const span = width + 260;
-  const fill = rgba(theme.cloud, 0.85);
+  const fill = rgba(theme.cloud, opacity);
   for (const [cy, speed, scale, offset] of clouds) {
     const x = ((offset * span + time * speed) % span) - 130;
     const y = cy * height;
@@ -218,14 +263,14 @@ function drawClouds(ctx, width, height, time, theme) {
   }
 }
 
-function drawStars(ctx, width, height, time) {
+function drawStars(ctx, width, height, time, opacity) {
   for (let i = 0; i < 60; i++) {
     const x = rnd(11, i) * width;
     const y = rnd(12, i) * height * 0.75;
     const twinkle = time === 0 ? 0.8 : 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(time * (1 + rnd(13, i) * 2) + i));
     const r = 0.8 + rnd(14, i) * 1.4;
     ctx.save();
-    ctx.globalAlpha = twinkle;
+    ctx.globalAlpha = twinkle * opacity;
     if (i % 9 === 0) {
       starPath(ctx, x, y, r * 2.6);
       ctx.fillStyle = '#FFF3C4';
@@ -237,25 +282,27 @@ function drawStars(ctx, width, height, time) {
   }
 }
 
-function drawFalling(ctx, width, height, time, petals) {
-  const count = petals ? 26 : 55;
+const LEAVES = ['#F2A93B', '#E5646B', '#D99A1E'];
+
+function drawFalling(ctx, width, height, time, kind, count) {
+  const flakes = kind === 'snow';
   for (let i = 0; i < count; i++) {
-    const speed = (petals ? 14 : 20) + rnd(21, i) * 22;
+    const speed = (flakes ? 20 : 14) + rnd(21, i) * 22;
     const span = height + 40;
     const y = ((rnd(22, i) * span + time * speed) % span) - 20;
-    const x = rnd(23, i) * width + Math.sin(time * 0.8 + i) * (petals ? 18 : 8);
-    if (petals) {
+    const x = rnd(23, i) * width + Math.sin(time * 0.8 + i) * (flakes ? 8 : 18);
+    if (flakes) {
+      circle(ctx, x, y, 1.2 + rnd(25, i) * 2, 'rgba(255,255,255,0.9)');
+    } else {
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(time * (0.6 + rnd(24, i)) + i);
       ctx.globalAlpha = 0.85;
       ctx.beginPath();
       ctx.ellipse(0, 0, 5, 3, 0, 0, TAU);
-      ctx.fillStyle = i % 3 === 0 ? '#FFFFFF' : '#F7B6C8';
+      ctx.fillStyle = kind === 'leaves' ? LEAVES[i % LEAVES.length] : i % 3 === 0 ? '#FFFFFF' : '#F7B6C8';
       ctx.fill();
       ctx.restore();
-    } else {
-      circle(ctx, x, y, 1.2 + rnd(25, i) * 2, 'rgba(255,255,255,0.9)');
     }
   }
 }
